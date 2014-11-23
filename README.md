@@ -12,6 +12,12 @@ input. It then parses the input arguments and calls corresponding callback
 functions registered through the specification as per interpreting each
 encountered option. Finally, it returns a list of unmatched arguments.
 
+Compatibility
+-------------
+* Windows/.NET
+* Linux/Mono
+* Mac OS X/Mono
+
 Example
 -------
 
