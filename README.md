@@ -1,12 +1,12 @@
-Fs.OptParse: An F# Command Line Parsing Library
+OptParse: An F# Command Line Parsing Library
 ===============================================
 
-Fs.OptParse library (OptParse.dll) implements command-line parsing APIs that are
-succinct and clean. It is completely written in a single F# file (fs), and a
+OptParse library (OptParse.dll) implements command-line parsing APIs that are
+succinct and clean. It is completely written in a single F# file (fs) and a
 single signature file (fsi). It is also very intuitive to use, and provides lots
 of convenient command-line parsing features.
 
-Fs.OptParse exposes a single function `opt_parse` that takes in a specification
+OptParse exposes a single function `opt_parse` that takes in a specification
 of command line options, a program name, and a list of arguments from a user as
 input. It then parses the input arguments and calls corresponding callback
 functions registered through the specification as per interpreting each
