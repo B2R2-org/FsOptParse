@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30324.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "OptParse", "src\OptParse.fsproj", "{9B91420B-4495-48D2-A4AF-633D0BB3CA0B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B91420B-4495-48D2-A4AF-633D0BB3CA0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B91420B-4495-48D2-A4AF-633D0BB3CA0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B91420B-4495-48D2-A4AF-633D0BB3CA0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B91420B-4495-48D2-A4AF-633D0BB3CA0B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
