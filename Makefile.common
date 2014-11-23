@@ -3,8 +3,6 @@
 #
 ################################################################################
 #
-# The MIT License (MIT)
-#
 # Copyright (c) 2014 Sang Kil Cha
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,7 +31,7 @@ OPTS=\
      --utf8output --warn:3 --warnaserror:76 \
      --target:library --debug:pdbonly --optimize+
 
-### fsmq worker files
+### optparse files
 OPTPARSE_FILES=\
 	src/optparse.fsi \
 	src/optparse.fs
