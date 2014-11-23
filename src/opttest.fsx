@@ -63,14 +63,18 @@ let spec =
   ]
 
 let _ =
+  let prog = "opttest.fsx" in
   let args = System.Environment.GetCommandLineArgs () in
   try
-    let left = opt_parse spec "opttest.fsx" args in
-    printfn "Rest args: %A" left
-    printfn "%d, %b, %d" !x !y !z
+    let left = opt_parse spec prog args in
+    printfn "Rest args: %A, x: %d, y: %b, z: %d" left !x !y !z
     0
-  with OptError err ->
-    printfn "option parsing error: %s" err
-    1
+  with
+    | SpecErr msg ->
+        eprintfn "invalid spec: %s" msg
+        exit 1
+    | RuntimeErr msg ->
+        eprintfn "invalid args given by user: %s" msg
+        usage_exit spec prog
 
 // vim: set tw=80 sts=2 sw=2:

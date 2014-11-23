@@ -6,17 +6,29 @@ succinct and clean. It is completely written in a single F# file (fs) and a
 single signature file (fsi). It is also very intuitive to use, and provides lots
 of convenient command-line parsing features.
 
-OptParse exposes a single function `opt_parse` that takes in a specification
-of command line options, a program name, and a list of arguments from a user as
-input. It then parses the input arguments and calls corresponding callback
-functions registered through the specification as per interpreting each
-encountered option. Finally, it returns a list of unmatched arguments.
+OptParse exposes just two functions including `opt_parse` and `usage_exit`.  The
+`opt_parse` function takes in a specification of command line options, a program
+name, and a list of arguments from a user as input. It then parses the input
+arguments and calls corresponding callback functions registered through the
+specification as per interpreting each encountered option. Finally, it returns a
+list of unmatched arguments. The `usage_exit` function prints out a well-formed
+usage based on a given specification, and terminates the program.
 
-Compatibility
--------------
-* Windows/.NET
-* Linux/Mono
-* Mac OS X/Mono
+Build
+-----
+### Windows/.NET
+
+    1. Use Visual studio to compile (OptParse.sln)
+    2. Just type "make" in a VS command prompt (it will automatically invoke NMake
+       for compilation)
+
+### Linux/Mono
+
+    We use GNU Makefile to compile OptParse with mono. Just type "make".
+
+### Mac OS X/Mono
+
+    We use GNU Makefile to compile OptParse with mono. Just type "make".
 
 Example
 -------
@@ -64,12 +76,16 @@ let spec =
 
 [<EntryPoint>]
 let main (args:string[]) =
+  let prog = "opttest.exe" in
   try
-    let left = opt_parse spec "opttest.exe" args in
-    printfn "Rest args: %A" left
-    printfn "%d, %b, %d" !x !y !z
+    let left = opt_parse spec prog args in
+    printfn "Rest args: %A, x: %d, y: %b, z: %d" left !x !y !z
     0
-  with OptError err ->
-    printfn "option parsing error: %s" err
-    1
+  with
+    | SpecErr msg ->
+        eprintfn "invalid spec: %s" msg
+        exit 1
+    | RuntimeErr msg ->
+        eprintfn "invalid args given by user: %s" msg
+        usage_exit spec prog
 ```

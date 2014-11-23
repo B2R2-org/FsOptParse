@@ -30,14 +30,16 @@ open System
 open System.Text.RegularExpressions
 
 (** Option parsing error *)
-exception OptError of string
+exception SpecErr of string
+exception RuntimeErr of string
 
-let opterr str = raise (OptError str)
+let specerr msg = raise (SpecErr msg)
+let rterr msg = raise (RuntimeErr msg)
 
 type args = string array
 
 let sanitize_extra (n: int) =
-  if n < 0 then opterr "extra field should be positive"
+  if n < 0 then specerr "Extra field should be positive"
   else n
 
 let rec remove_dashes (s: string) =
@@ -48,14 +50,14 @@ let sanitize_short (opt: string) =
   else
     let opt = remove_dashes opt in
     if opt.Length = 1 then "-" + opt
-    else opterr (sprintf "invalid short option %s is given" opt)
+    else specerr (sprintf "Invalid short option %s is given" opt)
 
 let sanitize_long (opt: string) =
   if opt.Length = 0 then opt
   else
     let opt = "--" + (remove_dashes opt) in
     if opt.Length > 2 then opt
-    else opterr (sprintf "invalid long option %s is given" opt)
+    else specerr (sprintf "Invalid long option %s is given" opt)
 
 (** command line option *)
 type Option (descr, callback, ?required, ?extra, ?short, ?long) =
@@ -74,7 +76,7 @@ type Option (descr, callback, ?required, ?extra, ?short, ?long) =
     member this.CompareTo obj =
       match obj with
         | :? Option as obj -> (this :> IComparable<_>).CompareTo obj
-        | _ -> opterr "not an option"
+        | _ -> specerr "Not an option"
 
   interface IEquatable<Option> with
     member this.Equals obj =
@@ -83,7 +85,7 @@ type Option (descr, callback, ?required, ?extra, ?short, ?long) =
   override this.Equals obj =
     match obj with
       | :? Option as obj -> (this :> IEquatable<_>).Equals obj
-      | _ -> opterr "not an option"
+      | _ -> specerr "Not an option"
 
   override this.GetHashCode () =
     hash (this.short, this.long)
@@ -109,7 +111,7 @@ let extra_string extra_cnt descr =
   else ""
 
 let opt_string_check short long =
-  if short = "" && long = "" then opterr "optstring not given"
+  if short = "" && long = "" then specerr "Optstring not given"
   else short, long
 
 let full_optstr (opt:Option) =
@@ -123,7 +125,7 @@ let full_optstr (opt:Option) =
     opt.short + (extra_string opt.extra opt.descr)
 
 (** show usage and exit *)
-let usage_exit prog (spec: spec) maxwidth reqset =
+let usage_exit_int prog (spec: spec) maxwidth reqset =
   let space_fill (str: string) =
     let margin = 5 in
     let space = maxwidth - str.Length + margin in
@@ -150,7 +152,7 @@ let usage_exit prog (spec: spec) maxwidth reqset =
 
 let set_update optset opt =
   if Set.exists (fun s -> s = opt) optset then
-    opterr (sprintf "duplicated opt: %s" opt)
+    specerr (sprintf "Duplicated opt: %s" opt)
   else
     Set.add opt optset
 
@@ -181,7 +183,7 @@ let get_spec_info spec =
 let rec parse left (spec: spec) (args: args) reqset =
   if args.Length <= 0 then
     if Set.isEmpty reqset then List.rev left
-    else opterr "required arguments not provided"
+    else rterr "Required arguments not provided"
   else
     let args, left, reqset = spec_loop args reqset left spec in
     parse left spec args reqset
@@ -209,19 +211,25 @@ and arg_match optarg args reqset =
     arg_no_match
 and arg_match_ret optarg args reqset extra =
   if (args.Length - extra) < 1 then
-    opterr (sprintf "extra arg not given for %s" args.[0])
+    rterr (sprintf "Extra arg not given for %s" args.[0])
   else
-    optarg.callback args.[1..extra];
+    try optarg.callback args.[1..extra]
+    with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
     (true, args.[(1+extra)..], Set.remove optarg reqset)
 
 (** Parse command line arguments and return a list of unmatched arguments *)
 let opt_parse (spec: spec) prog (args: args) =
   let maxwidth, reqset = check_spec spec |> get_spec_info in
   if args.Length <= 0 then
-    usage_exit prog spec maxwidth reqset
+    usage_exit_int prog spec maxwidth reqset
   else if Array.exists (fun a -> a = "-h" || a = "--help") args then
-    usage_exit prog spec maxwidth reqset
+    usage_exit_int prog spec maxwidth reqset
   else
     parse [] spec args reqset
+
+(** Show usage and exit *)
+let usage_exit spec prog =
+  let maxwidth, reqset = check_spec spec |> get_spec_info in
+  usage_exit_int prog spec maxwidth reqset
 
 // vim: set tw=80 sts=2 sw=2:

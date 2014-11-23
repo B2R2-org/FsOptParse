@@ -27,7 +27,8 @@
 module OptParse
 
 (** Option parsing error *)
-exception OptError of string
+exception SpecErr of string
+exception RuntimeErr of string
 
 (** Arguments *)
 type args = string array
@@ -53,5 +54,8 @@ type spec = Option list
 
 (** Parse command line arguments and return a list of unmatched arguments *)
 val opt_parse : spec -> string -> args -> string list
+
+(** Show usage and exit *)
+val usage_exit : spec -> string -> 'a
 
 // vim: set tw=80 sts=2 sw=2:
