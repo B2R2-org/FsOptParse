@@ -1,6 +1,3 @@
-#
-# A makefile for Unix.
-#
 ################################################################################
 #
 # Copyright (c) 2014 Sang Kil Cha
@@ -23,20 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-### load the common rules.
-include Makefile.common
+FAKE=packages/FAKE/tools/FAKE.exe
 
-FSC=$(shell which fsharpc)
+all: fake build.fsx
+	mono $(FAKE) $<
 
-all: $(BUILDDIR)/$(OPTPARSE)
+clean: fake build.fsx
+	mono $(FAKE) $< clean
 
-$(BUILDDIR):
-	mkdir $(BUILDDIR)
+fake: $(FAKE)
+	mono .nuget/NuGet.exe Install FAKE -OutputDirectory packages -ExcludeVersion
 
-$(BUILDDIR)/$(OPTPARSE): $(BUILDDIR) $(OPTPARSE_FILES)
-	$(FSC) $(OPTS) -o:$@ $(OPTPARSE_FILES)
-
-.PHONY: all clean
-
-clean:
-	rm -rf $(BUILDDIR)
+.PHONY: all clean fake

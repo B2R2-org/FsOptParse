@@ -144,7 +144,7 @@ let usage_exit_int prog (spec: spec) maxwidth reqset =
   printfn "[opts...]\n"
   (* printing a list of options *)
   List.iter (fun (optarg: Option) ->
-    let short, long = opt_string_check optarg.short optarg.long in
+    let _short, _long = opt_string_check optarg.short optarg.long in
     let optstr = full_optstr optarg in
     printfn "%s%s: %s" optstr (space_fill optstr) optarg.descr
   ) spec

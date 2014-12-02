@@ -16,19 +16,7 @@ usage based on a given specification, and terminates the program.
 
 Build
 -----
-#### Windows/.NET
-
-    1. Use Visual studio to compile (OptParse.sln)
-    2. Just type "make" in a VS command prompt (it will automatically invoke NMake
-       for compilation)
-
-#### Linux/Mono
-
-    We use GNU Makefile to compile OptParse with mono. Just type "make".
-
-#### Mac OS X/Mono
-
-    We use GNU Makefile to compile OptParse with mono. Just type "make".
+OptParse uses FAKE for building. Simply type `make` in a terminal.
 
 Example
 -------
