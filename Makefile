@@ -22,13 +22,13 @@
 
 FAKE=packages/FAKE/tools/FAKE.exe
 
-all: fake build.fsx
-	mono $(FAKE) $<
+all: $(FAKE) build.fsx
+	mono $(FAKE) build.fsx
 
-clean: fake build.fsx
-	mono $(FAKE) $< clean
+clean: $(FAKE) build.fsx
+	mono $(FAKE) build.fsx clean
 
-fake: $(FAKE)
+$(FAKE):
 	mono .nuget/NuGet.exe Install FAKE -OutputDirectory packages -ExcludeVersion
 
-.PHONY: all clean fake
+.PHONY: all clean
