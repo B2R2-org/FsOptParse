@@ -11,8 +11,5 @@
     <description>@description@</description>
     <releaseNotes>@releaseNotes@</releaseNotes>
     <tags>f# optparse getopt command command-line options arguments</tags>
-    <dependencies>
-      <dependency id="FAKE" version="3.11.0" />
-    </dependencies>
   </metadata>
 </package>
