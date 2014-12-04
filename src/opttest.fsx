@@ -27,9 +27,21 @@
 #load "optparse.fs"
 open OptParse
 
-let x = ref 0
-let y = ref false
-let z = ref 0
+(** defines a state to pass to the option parser *)
+type opts =
+  {
+    opt_x : int;
+    opt_y : bool;
+    opt_z : string;
+  }
+
+(** default option state *)
+let default_opts =
+  {
+    opt_x = 0;
+    opt_y = false;
+    opt_z = "";
+  }
 
 (*
   An example command line specification, which is a list of Options.
@@ -38,36 +50,54 @@ let z = ref 0
 *)
 let spec =
   [
-    (* this option is specified with -x <NUM>. There is an extra argument to
-       specify a number. *)
-    Option (descr="this is a testing param X", (* description of an option *)
-            extra=1, (* how many extra argument must be provided by a user? *)
-            callback=(fun arg -> x := (int) arg.[0]), (* remember the option *)
-            short="-x" (* just use a short option -x *) );
+    (* This option can be specified with -x <NUM>. There is an extra argument to
+       specify a value in integer. *)
+    Option ((* description of the option *)
+            descr="this is a testing param X",
+            (* how many extra argument must be provided by a user? *)
+            extra=1,
+            (* callback sets up the option and returns it *)
+            callback=(fun opts arg -> {opts with opt_x=(int) arg.[0]}),
+            (* use a short option style -x *)
+            short="-x"
+           );
 
-    (* this option is specified with -y. There is no extra argument. This option
-       just turns on a flag, which is the global variable y in this case. *)
-    Option (descr="this is a testing param Y",
-            callback=(fun _ -> y := true), (* set the option to be true *)
+    (* This option can be specified with -y. There is no extra argument. This
+       option just sets a flag, opt_y. *)
+    Option ((* description of the option *)
+            descr="this is a testing param Y",
+            (* set the option to be true *)
+            callback=(fun opts _ -> {opts with opt_y=true}),
+            (* use a short option style (-y) *)
             short="-y",
-            long="--yoohoo" (* use both short and long option *) );
+            (* also use a long option style (--yoohoo) *)
+            long="--yoohoo"
+           );
 
-    (* this option is a required option. In other words, this option must be
-       given to pass the option parsing. This option takes in an additional
-       integer argument, and set it to the global variable z. *)
-    Option (descr="required parameter <NUM> with an integer option",
-            callback=(fun arg -> z := (int) arg.[0]),
-            required=true, (* this is a required option *)
-            extra=1, (* one additional argument to specify an integer value *)
-            long="--req" (* use only a long option *) );
+    (* The third option is a required option. In other words, option parsing
+       will raise an exception if this option is not given by a user. This
+       option takes in an additional integer argument, and set it to the global
+       variable z. *)
+    Option ((* description of the option *)
+            descr="required parameter <STRING> with an integer option",
+            (* callback to set the opt_z value *)
+            callback=(fun opts arg -> {opts with opt_z=arg.[0]}),
+            (* specifying this is a required option *)
+            required=true,
+            (* one additional argument to specify an integer value *)
+            extra=1,
+            (* use only a long option style *)
+            long="--req"
+           );
   ]
 
 let _ =
   let prog = "opttest.fsx" in
   let args = System.Environment.GetCommandLineArgs () in
   try
-    let left = opt_parse spec prog args in
-    printfn "Rest args: %A, x: %d, y: %b, z: %d" left !x !y !z
+    let left, opts = opt_parse spec prog args default_opts in
+    printfn "Rest args: %A, x: %d, y: %b, z: %s"
+      left opts.opt_x opts.opt_y opts.opt_z
     0
   with
     | SpecErr msg ->

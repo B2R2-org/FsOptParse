@@ -60,38 +60,38 @@ let sanitize_long (opt: string) =
     else specerr (sprintf "Invalid long option %s is given" opt)
 
 (** command line option *)
-type Option (descr, callback, ?required, ?extra, ?short, ?long) =
+type 'a Option (descr, callback, ?required, ?extra, ?short, ?long) =
   member this.descr : string = descr
-  member this.callback = callback
+  member this.callback : ('a -> args -> 'a) = callback
   member this.required : bool = defaultArg required false
   member this.extra : int = defaultArg extra 0 |> sanitize_extra
   member this.short : string = defaultArg short "" |> sanitize_short
   member this.long : string = defaultArg long "" |> sanitize_long
 
-  interface IComparable<Option> with
+  interface IComparable<'a Option> with
     member this.CompareTo obj =
       compare (this.short, this.long) (obj.short, obj.long)
 
   interface IComparable with
     member this.CompareTo obj =
       match obj with
-        | :? Option as obj -> (this :> IComparable<_>).CompareTo obj
+        | :? ('a Option) as obj -> (this :> IComparable<_>).CompareTo obj
         | _ -> specerr "Not an option"
 
-  interface IEquatable<Option> with
+  interface IEquatable<'a Option> with
     member this.Equals obj =
       this.short = obj.short && this.long = obj.long
 
   override this.Equals obj =
     match obj with
-      | :? Option as obj -> (this :> IEquatable<_>).Equals obj
+      | :? ('a Option) as obj -> (this :> IEquatable<_>).Equals obj
       | _ -> specerr "Not an option"
 
   override this.GetHashCode () =
     hash (this.short, this.long)
 
 (* The specification of command line options *)
-type spec = Option list
+type 'a spec = 'a Option list
 
 let rec rep acc ch n =
   if n <= 0 then acc else rep (ch::acc) ch (n-1)
@@ -114,7 +114,7 @@ let opt_string_check short long =
   if short = "" && long = "" then specerr "Optstring not given"
   else short, long
 
-let full_optstr (opt:Option) =
+let full_optstr (opt:'a Option) =
   let l = opt.long.Length in
   let s = opt.short.Length in
   if l > 0 && s > 0 then
@@ -125,7 +125,7 @@ let full_optstr (opt:Option) =
     opt.short + (extra_string opt.extra opt.descr)
 
 (** show usage and exit *)
-let usage_exit_int prog (spec: spec) maxwidth reqset =
+let usage_exit_int prog (spec: 'a spec) maxwidth reqset =
   let space_fill (str: string) =
     let margin = 5 in
     let space = maxwidth - str.Length + margin in
@@ -134,7 +134,7 @@ let usage_exit_int prog (spec: spec) maxwidth reqset =
   (* printing a simple usage *)
   printf "Usage: %s " prog
   (* required option must be presented in the usage *)
-  Set.iter (fun (reqopt: Option) ->
+  Set.iter (fun (reqopt: 'a Option) ->
     let short, long = opt_string_check reqopt.short reqopt.long in
     if short.Length = 0 then
       printf "%s%s " long (extra_string reqopt.extra reqopt.descr)
@@ -143,7 +143,7 @@ let usage_exit_int prog (spec: spec) maxwidth reqset =
   ) reqset
   printfn "[opts...]\n"
   (* printing a list of options *)
-  List.iter (fun (optarg: Option) ->
+  List.iter (fun (optarg: 'a Option) ->
     let _short, _long = opt_string_check optarg.short optarg.long in
     let optstr = full_optstr optarg in
     printfn "%s%s: %s" optstr (space_fill optstr) optarg.descr
@@ -156,10 +156,10 @@ let set_update optset opt =
   else
     Set.add opt optset
 
-let check_spec (spec: spec) =
+let check_spec (spec: 'a spec) =
   let optset : Set<string> = Set.empty |> Set.add "-h" |> Set.add "--help" in
   let _ =
-    List.fold (fun optset (opt: Option) ->
+    List.fold (fun optset (opt: 'a Option) ->
       let short, long = opt_string_check opt.short opt.long in
       let optset =
         if short.Length > 0 then set_update optset short else optset
@@ -169,8 +169,8 @@ let check_spec (spec: spec) =
   in
   spec
 
-let get_spec_info spec =
-  List.fold (fun (width, (reqset: Set<Option>)) (optarg: Option) ->
+let get_spec_info (spec: 'a spec) =
+  List.fold (fun (width, (reqset: Set<'a Option>)) (optarg: 'a Option) ->
     let w =
       let opt = full_optstr optarg in
       let newwidth = opt.Length in
@@ -180,52 +180,54 @@ let get_spec_info spec =
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
 
-let rec parse left (spec: spec) (args: args) reqset =
+let rec parse left (spec: 'a spec) (args: args) reqset state =
   if args.Length <= 0 then
-    if Set.isEmpty reqset then List.rev left
+    if Set.isEmpty reqset then List.rev left, state
     else rterr "Required arguments not provided"
   else
-    let args, left, reqset = spec_loop args reqset left spec in
-    parse left spec args reqset
-and spec_loop args reqset left = function
+    let args, left, reqset, state = spec_loop args reqset left state spec in
+    parse left spec args reqset state
+and spec_loop args reqset left state = function
     | [] ->
-        args.[1..], (args.[0] :: left), reqset
-    | optarg::rest ->
-        let matching, args, reqset = arg_match optarg args reqset in
-        if matching then args, left, reqset
-        else spec_loop args reqset left rest
-and arg_match optarg args reqset =
-  let arg_no_match = (false, args, reqset) in
+        args.[1..], (args.[0] :: left), reqset, state
+    | (optarg: 'a Option)::rest ->
+        let matching, args, reqset, state = arg_match optarg args reqset state in
+        if matching then args, left, reqset, state
+        else spec_loop args reqset left state rest
+and arg_match (optarg: 'a Option) args reqset state =
+  let arg_no_match = (false, args, reqset, state) in
   let s, l = opt_string_check optarg.short optarg.long in
   let extra = optarg.extra in
   if s = args.[0] || l = args.[0] then
-    arg_match_ret optarg args reqset extra
+    arg_match_ret optarg args reqset extra state
   else if args.[0].Contains("=") then
     let splitted_arg = args.[0].Split([|'='|], 2) in
     if s = splitted_arg.[0] || l = splitted_arg.[0] then
       let args = Array.concat [splitted_arg; args.[1..]] in
-      arg_match_ret optarg args reqset extra
+      arg_match_ret optarg args reqset extra state
     else
       arg_no_match
   else
     arg_no_match
-and arg_match_ret optarg args reqset extra =
+and arg_match_ret (optarg: 'a Option) args reqset extra state =
   if (args.Length - extra) < 1 then
     rterr (sprintf "Extra arg not given for %s" args.[0])
   else
-    try optarg.callback args.[1..extra]
-    with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
-    (true, args.[(1+extra)..], Set.remove optarg reqset)
+    let state': 'a =
+      try optarg.callback state args.[1..extra]
+      with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
+    in
+    (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
 (** Parse command line arguments and return a list of unmatched arguments *)
-let opt_parse (spec: spec) prog (args: args) =
+let opt_parse (spec: 'a spec) prog (args: args) (state: 'a) =
   let maxwidth, reqset = check_spec spec |> get_spec_info in
   if args.Length <= 0 then
     usage_exit_int prog spec maxwidth reqset
   else if Array.exists (fun a -> a = "-h" || a = "--help") args then
     usage_exit_int prog spec maxwidth reqset
   else
-    parse [] spec args reqset
+    parse [] spec args reqset state
 
 (** Show usage and exit *)
 let usage_exit spec prog =

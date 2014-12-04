@@ -34,28 +34,33 @@ exception RuntimeErr of string
 type args = string array
 
 (** A command line option *)
-type Option =
+type 'a Option =
   class
-    interface System.IEquatable<Option>
+    interface System.IEquatable<'a Option>
     interface System.IComparable
-    interface System.IComparable<Option>
+    interface System.IComparable<'a Option>
 
     new : descr     : string
-        * callback  : (args -> unit)
+        * callback  : ('a -> args -> 'a)
         * ?required : bool
         * ?extra    : int
         * ?short    : string
         * ?long     : string
-       -> Option
+       -> 'a Option
   end
 
 (* The specification of command line options *)
-type spec = Option list
+type 'a spec = 'a Option list
 
 (** Parse command line arguments and return a list of unmatched arguments *)
-val opt_parse : spec -> string -> args -> string list
+val opt_parse :
+     'a spec           (** command line specification *)
+  -> string            (** program name *)
+  -> args              (** command line args *)
+  -> 'a                (** option parsing state *)
+  -> string list * 'a  (** list of unmatched args *)
 
 (** Show usage and exit *)
-val usage_exit : spec -> string -> 'a
+val usage_exit : 'a spec -> string -> 'b
 
 // vim: set tw=80 sts=2 sw=2:

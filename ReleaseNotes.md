@@ -1,3 +1,6 @@
+### New in 0.2.0 (Released 12/4/2014)
+* Changing callback mechanism to remove side effects
+
 ### New in 0.1.1 (Released 12/4/2014)
 * Changing dependency information
 
