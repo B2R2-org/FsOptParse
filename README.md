@@ -2,9 +2,9 @@ OptParse: An F# Command Line Parsing Library
 ===============================================
 
 OptParse library (OptParse.dll) implements command-line parsing APIs that are
-succinct and clean. It is completely written in a single F# file (fs) and a
-single signature file (fsi). It is also very intuitive to use, and provides lots
-of convenient command-line parsing features.
+succinct and clean. It is completely written in a single F# file (fs). It is
+very intuitive to use, and also provides lots of convenient command-line parsing
+features.
 
 OptParse exposes just two functions including `opt_parse` and `usage_exit`.  The
 `opt_parse` function takes in a specification of command line options, a program
@@ -17,6 +17,12 @@ usage based on a given specification, and terminates the program.
 Build
 -----
 OptParse uses FAKE for building. Simply type `make` in a terminal.
+
+Package
+-------
+Available in NuGet.
+
+[![NuGet Status](http://img.shields.io/nuget/v/OptParse.svg?style=flat)](https://www.nuget.org/packages/OptParse/)
 
 Example
 -------
