@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>OptParse</id>
+    <version>1.0.0</version>
+    <authors>Sang Kil Cha</authors>
+    <owners>Sang Kil Cha</owners>
+    <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>https://github.com/sangkilc/optparse.fs</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>@description@</description>
+    <releaseNotes>@releaseNotes@</releaseNotes>
+    <tags>f# optparse getopt command command-line options arguments</tags>
+    <dependencies>
+      <dependency id="FAKE" version="3.11.0" />
+    </dependencies>
+  </metadata>
+</package>
