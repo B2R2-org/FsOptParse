@@ -1,6 +1,7 @@
 // include Fake lib
 #r "packages/FAKE/tools/FakeLib.dll"
 open Fake
+open Fake.AssemblyInfoFile
 open Fake.FscHelper
 
 let projDesc = "A tiny, but powerful option parsing library written in a single F# file"
@@ -16,8 +17,19 @@ Target "Clean" (fun _ ->
   CleanDir buildDir
 )
 
+Target "AssemblyInfo" (fun _ ->
+  CreateFSharpAssemblyInfo "src/AssemblyInfo.fs"
+    [
+      Attribute.Title "OptParse.Runtime"
+      Attribute.Product "OptParse.Runtime"
+      Attribute.Description projDesc
+      Attribute.Version releaseNotes.AssemblyVersion
+      Attribute.FileVersion releaseNotes.AssemblyVersion
+    ]
+)
+
 Target "Default" (fun _ ->
-  ["src/optparse.fsi"; "src/optparse.fs"]
+  ["src/AssemblyInfo.fs"; "src/optparse.fsi"; "src/optparse.fs"]
   |> Fsc (fun p ->
            {p with Output = buildDir @@ "OptParse.dll"
                    FscTarget = Library
@@ -51,6 +63,7 @@ Target "Pack" DoNothing
 
 // Dependencies
 "Clean"
+  ==> "AssemblyInfo"
   ==> "Default"
 
 "CreatePackage"

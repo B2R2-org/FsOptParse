@@ -1,3 +1,6 @@
+### New in 0.2.1 (Released 12/5/2014)
+* Adding an assembly information
+
 ### New in 0.2.0 (Released 12/4/2014)
 * Changing callback mechanism to remove side effects
 
