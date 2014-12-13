@@ -74,6 +74,16 @@ let spec =
             long="--yoohoo"
            );
 
+    (* A dummy option to pretty-print the usage *)
+    Option ((* description of the option *)
+            descr="",
+            dummy=true
+           );
+    Option ((* description of the option *)
+            descr="[Required Options]",
+            dummy=true
+           );
+
     (* The third option is a required option. In other words, option parsing
        will raise an exception if this option is not given by a user. This
        option takes in an additional integer argument, and set it to the global

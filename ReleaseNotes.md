@@ -1,3 +1,6 @@
+### New in 0.2.2 (Released 12/5/2014)
+* Adding a dummy option
+
 ### New in 0.2.1 (Released 12/5/2014)
 * Adding an assembly information
 

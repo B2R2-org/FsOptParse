@@ -60,13 +60,16 @@ let sanitize_long (opt: string) =
     else specerr (sprintf "Invalid long option %s is given" opt)
 
 (** command line option *)
-type 'a Option (descr, callback, ?required, ?extra, ?short, ?long) =
+type 'a Option (descr, ?callback, ?required, ?extra, ?short, ?long, ?dummy) =
+  let defaultCB opts (_args:args) = opts in
+
   member this.descr : string = descr
-  member this.callback : ('a -> args -> 'a) = callback
+  member this.callback : ('a -> args -> 'a) = defaultArg callback defaultCB
   member this.required : bool = defaultArg required false
   member this.extra : int = defaultArg extra 0 |> sanitize_extra
   member this.short : string = defaultArg short "" |> sanitize_short
   member this.long : string = defaultArg long "" |> sanitize_long
+  member this.dummy : bool = defaultArg dummy false
 
   interface IComparable<'a Option> with
     member this.CompareTo obj =
@@ -144,27 +147,33 @@ let usage_exit_int prog (spec: 'a spec) maxwidth reqset =
   printfn "[opts...]\n"
   (* printing a list of options *)
   List.iter (fun (optarg: 'a Option) ->
-    let _short, _long = opt_string_check optarg.short optarg.long in
-    let optstr = full_optstr optarg in
-    printfn "%s%s: %s" optstr (space_fill optstr) optarg.descr
+    if optarg.dummy then
+      printfn "%s" optarg.descr
+    else
+      let _short, _long = opt_string_check optarg.short optarg.long in
+      let optstr = full_optstr optarg in
+      printfn "%s%s: %s" optstr (space_fill optstr) optarg.descr
   ) spec
   printfn ""; exit 1
 
-let set_update optset opt =
-  if Set.exists (fun s -> s = opt) optset then
-    specerr (sprintf "Duplicated opt: %s" opt)
+let set_update (opt: string) optset =
+  if opt.Length > 0 then
+    if Set.exists (fun s -> s = opt) optset then
+      specerr (sprintf "Duplicated opt: %s" opt)
+    else
+      Set.add opt optset
   else
-    Set.add opt optset
+    optset
 
 let check_spec (spec: 'a spec) =
   let optset : Set<string> = Set.empty |> Set.add "-h" |> Set.add "--help" in
   let _ =
     List.fold (fun optset (opt: 'a Option) ->
-      let short, long = opt_string_check opt.short opt.long in
-      let optset =
-        if short.Length > 0 then set_update optset short else optset
-      in
-      if long.Length > 0 then set_update optset long else optset
+      if opt.dummy then
+        optset
+      else
+        let short, long = opt_string_check opt.short opt.long in
+        set_update short optset |> set_update long
     ) optset spec
   in
   spec
@@ -176,7 +185,10 @@ let get_spec_info (spec: 'a spec) =
       let newwidth = opt.Length in
       if newwidth > width then newwidth else width
     in
-    let r = if optarg.required then Set.add optarg reqset else reqset in
+    let r =
+      if optarg.required && not optarg.dummy then Set.add optarg reqset
+      else reqset
+    in
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
 
@@ -191,8 +203,11 @@ and spec_loop args reqset left state = function
     | [] ->
         args.[1..], (args.[0] :: left), reqset, state
     | (optarg: 'a Option)::rest ->
-        let matching, args, reqset, state = arg_match optarg args reqset state in
-        if matching then args, left, reqset, state
+        let m, args, reqset, state =
+          if optarg.dummy then false, args, reqset, state
+          else arg_match optarg args reqset state
+        in
+        if m then args, left, reqset, state
         else spec_loop args reqset left state rest
 and arg_match (optarg: 'a Option) args reqset state =
   let arg_no_match = (false, args, reqset, state) in

@@ -4,9 +4,9 @@ open System.Reflection
 [<assembly: AssemblyTitleAttribute("OptParse.Runtime")>]
 [<assembly: AssemblyProductAttribute("OptParse.Runtime")>]
 [<assembly: AssemblyDescriptionAttribute("A tiny, but powerful option parsing library written in a single F# file")>]
-[<assembly: AssemblyVersionAttribute("0.2.0")>]
-[<assembly: AssemblyFileVersionAttribute("0.2.0")>]
+[<assembly: AssemblyVersionAttribute("0.2.2")>]
+[<assembly: AssemblyFileVersionAttribute("0.2.2")>]
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] Version = "0.2.0"
+    let [<Literal>] Version = "0.2.2"

@@ -41,11 +41,12 @@ type 'a Option =
     interface System.IComparable<'a Option>
 
     new : descr     : string
-        * callback  : ('a -> args -> 'a)
+        * ?callback : ('a -> args -> 'a)
         * ?required : bool
         * ?extra    : int
         * ?short    : string
         * ?long     : string
+        * ?dummy    : bool
        -> 'a Option
   end
 

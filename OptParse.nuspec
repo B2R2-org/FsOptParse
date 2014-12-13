@@ -2,10 +2,10 @@
 <package >
   <metadata>
     <id>OptParse</id>
-    <version>1.0.0</version>
+    <version>@build.number@</version>
     <authors>Sang Kil Cha</authors>
     <owners>Sang Kil Cha</owners>
-    <licenseUrl>http://opensource.org/licenses/MIT</licenseUrl>
+    <licenseUrl>http://mit-license.org/</licenseUrl>
     <projectUrl>https://github.com/sangkilc/optparse.fs</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>@description@</description>
