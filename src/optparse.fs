@@ -237,8 +237,10 @@ and arg_match_ret (optarg: 'a Option) args reqset extra state =
 (** Parse command line arguments and return a list of unmatched arguments *)
 let opt_parse (spec: 'a spec) prog (args: args) (state: 'a) =
   let maxwidth, reqset = check_spec spec |> get_spec_info in
-  if args.Length <= 0 then
+  if args.Length < 0 then
     usage_exit_int prog spec maxwidth reqset
+  else if args.Length = 0 then
+    [], state
   else if Array.exists (fun a -> a = "-h" || a = "--help") args then
     usage_exit_int prog spec maxwidth reqset
   else
