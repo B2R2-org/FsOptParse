@@ -200,15 +200,15 @@ let rec parse left (spec: 'a spec) (args: args) reqset state =
     let args, left, reqset, state = spec_loop args reqset left state spec in
     parse left spec args reqset state
 and spec_loop args reqset left state = function
-    | [] ->
-        args.[1..], (args.[0] :: left), reqset, state
-    | (optarg: 'a Option)::rest ->
-        let m, args, reqset, state =
-          if optarg.dummy then false, args, reqset, state
-          else arg_match optarg args reqset state
-        in
-        if m then args, left, reqset, state
-        else spec_loop args reqset left state rest
+  | [] ->
+      args.[1..], (args.[0] :: left), reqset, state
+  | (optarg: 'a Option)::rest ->
+      let m, args, reqset, state =
+        if optarg.dummy then false, args, reqset, state
+        else arg_match optarg args reqset state
+      in
+      if m then args, left, reqset, state
+      else spec_loop args reqset left state rest
 and arg_match (optarg: 'a Option) args reqset state =
   let arg_no_match = (false, args, reqset, state) in
   let s, l = opt_string_check optarg.short optarg.long in
@@ -239,8 +239,6 @@ let opt_parse (spec: 'a spec) prog (args: args) (state: 'a) =
   let maxwidth, reqset = check_spec spec |> get_spec_info in
   if args.Length < 0 then
     usage_exit_int prog spec maxwidth reqset
-  else if args.Length = 0 then
-    [], state
   else if Array.exists (fun a -> a = "-h" || a = "--help") args then
     usage_exit_int prog spec maxwidth reqset
   else
