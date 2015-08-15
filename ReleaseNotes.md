@@ -1,3 +1,6 @@
+### New in 0.2.4 (Released 8/13/2015)
+* A minor bug fix
+
 ### New in 0.2.3 (Released 8/13/2015)
 * Handling a no-argument case
 
