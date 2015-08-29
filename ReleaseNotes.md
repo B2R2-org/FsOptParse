@@ -1,3 +1,6 @@
+### New in 0.2.5 (Released 8/28/2015)
+* Changing API naming (to follow .net convention)
+
 ### New in 0.2.4 (Released 8/13/2015)
 * A minor bug fix
 
