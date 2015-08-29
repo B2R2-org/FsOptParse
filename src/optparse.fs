@@ -38,24 +38,24 @@ let rterr msg = raise (RuntimeErr msg)
 
 type args = string array
 
-let sanitize_extra (n: int) =
+let sanitizeExtra (n: int) =
   if n < 0 then specerr "Extra field should be positive"
   else n
 
-let rec remove_dashes (s: string) =
-  if s.[0] = '-' then remove_dashes s.[1..] else s
+let rec removeDashes (s: string) =
+  if s.[0] = '-' then removeDashes s.[1..] else s
 
-let sanitize_short (opt: string) =
+let sanitizeShort (opt: string) =
   if opt.Length = 0 then opt
   else
-    let opt = remove_dashes opt in
+    let opt = removeDashes opt
     if opt.Length = 1 then "-" + opt
     else specerr (sprintf "Invalid short option %s is given" opt)
 
-let sanitize_long (opt: string) =
+let sanitizeLong (opt: string) =
   if opt.Length = 0 then opt
   else
-    let opt = "--" + (remove_dashes opt) in
+    let opt = "--" + (removeDashes opt) in
     if opt.Length > 2 then opt
     else specerr (sprintf "Invalid long option %s is given" opt)
 
@@ -66,9 +66,9 @@ type 'a Option (descr, ?callback, ?required, ?extra, ?short, ?long, ?dummy) =
   member this.descr : string = descr
   member this.callback : ('a -> args -> 'a) = defaultArg callback defaultCB
   member this.required : bool = defaultArg required false
-  member this.extra : int = defaultArg extra 0 |> sanitize_extra
-  member this.short : string = defaultArg short "" |> sanitize_short
-  member this.long : string = defaultArg long "" |> sanitize_long
+  member this.extra : int = defaultArg extra 0 |> sanitizeExtra
+  member this.short : string = defaultArg short "" |> sanitizeShort
+  member this.long : string = defaultArg long "" |> sanitizeLong
   member this.dummy : bool = defaultArg dummy false
 
   interface IComparable<'a Option> with
@@ -99,37 +99,37 @@ type 'a spec = 'a Option list
 let rec rep acc ch n =
   if n <= 0 then acc else rep (ch::acc) ch (n-1)
 
-let get_extra extra_cnt descr =
-  let pattern = @"<([a-zA-Z0-9]+)>" in
-  let m = Regex.Matches(descr, pattern) in
-  if m.Count > 0 && m.Count <= extra_cnt then
+let getExtra extraCnt descr =
+  let pattern = @"<([a-zA-Z0-9]+)>"
+  let m = Regex.Matches(descr, pattern)
+  if m.Count > 0 && m.Count <= extraCnt then
     Seq.fold (fun (acc:string) (m:Match) ->
       acc + " <" + m.Groups.[1].Value + ">"
     ) "" (Seq.cast m)
   else
     " <OPT>"
 
-let extra_string extra_cnt descr =
-  if extra_cnt > 0 then get_extra extra_cnt descr
+let extraString extraCnt descr =
+  if extraCnt > 0 then getExtra extraCnt descr
   else ""
 
-let opt_string_check short long =
+let optStringCheck short long =
   if short = "" && long = "" then specerr "Optstring not given"
   else short, long
 
-let full_optstr (opt:'a Option) =
+let fullOptStr (opt:'a Option) =
   let l = opt.long.Length in
   let s = opt.short.Length in
   if l > 0 && s > 0 then
-    opt.short + "," + opt.long + (extra_string opt.extra opt.descr)
+    opt.short + "," + opt.long + (extraString opt.extra opt.descr)
   else if l > 0 then
-    opt.long + (extra_string opt.extra opt.descr)
+    opt.long + (extraString opt.extra opt.descr)
   else
-    opt.short + (extra_string opt.extra opt.descr)
+    opt.short + (extraString opt.extra opt.descr)
 
 (** show usage and exit *)
-let usage_exit_int prog (spec: 'a spec) maxwidth reqset =
-  let space_fill (str: string) =
+let usageExitInt prog (spec: 'a spec) maxwidth reqset =
+  let spaceFill (str: string) =
     let margin = 5 in
     let space = maxwidth - str.Length + margin in
     String.concat "" (rep [] " " space)
@@ -138,11 +138,11 @@ let usage_exit_int prog (spec: 'a spec) maxwidth reqset =
   printf "Usage: %s " prog
   (* required option must be presented in the usage *)
   Set.iter (fun (reqopt: 'a Option) ->
-    let short, long = opt_string_check reqopt.short reqopt.long in
+    let short, long = optStringCheck reqopt.short reqopt.long in
     if short.Length = 0 then
-      printf "%s%s " long (extra_string reqopt.extra reqopt.descr)
+      printf "%s%s " long (extraString reqopt.extra reqopt.descr)
     else
-      printf "%s%s " short (extra_string reqopt.extra reqopt.descr)
+      printf "%s%s " short (extraString reqopt.extra reqopt.descr)
   ) reqset
   printfn "[opts...]\n"
   (* printing a list of options *)
@@ -150,13 +150,13 @@ let usage_exit_int prog (spec: 'a spec) maxwidth reqset =
     if optarg.dummy then
       printfn "%s" optarg.descr
     else
-      let _short, _long = opt_string_check optarg.short optarg.long in
-      let optstr = full_optstr optarg in
-      printfn "%s%s: %s" optstr (space_fill optstr) optarg.descr
+      let _short, _long = optStringCheck optarg.short optarg.long in
+      let optstr = fullOptStr optarg in
+      printfn "%s%s: %s" optstr (spaceFill optstr) optarg.descr
   ) spec
   printfn ""; exit 1
 
-let set_update (opt: string) optset =
+let setUpdate (opt: string) optset =
   if opt.Length > 0 then
     if Set.exists (fun s -> s = opt) optset then
       specerr (sprintf "Duplicated opt: %s" opt)
@@ -165,23 +165,23 @@ let set_update (opt: string) optset =
   else
     optset
 
-let check_spec (spec: 'a spec) =
+let checkSpec (spec: 'a spec) =
   let optset : Set<string> = Set.empty |> Set.add "-h" |> Set.add "--help" in
   let _ =
     List.fold (fun optset (opt: 'a Option) ->
       if opt.dummy then
         optset
       else
-        let short, long = opt_string_check opt.short opt.long in
-        set_update short optset |> set_update long
+        let short, long = optStringCheck opt.short opt.long in
+        setUpdate short optset |> setUpdate long
     ) optset spec
   in
   spec
 
-let get_spec_info (spec: 'a spec) =
+let getSpecInfo (spec: 'a spec) =
   List.fold (fun (width, (reqset: Set<'a Option>)) (optarg: 'a Option) ->
     let w =
-      let opt = full_optstr optarg in
+      let opt = fullOptStr optarg in
       let newwidth = opt.Length in
       if newwidth > width then newwidth else width
     in
@@ -197,34 +197,34 @@ let rec parse left (spec: 'a spec) (args: args) reqset state =
     if Set.isEmpty reqset then List.rev left, state
     else rterr "Required arguments not provided"
   else
-    let args, left, reqset, state = spec_loop args reqset left state spec in
+    let args, left, reqset, state = specLoop args reqset left state spec in
     parse left spec args reqset state
-and spec_loop args reqset left state = function
+and specLoop args reqset left state = function
   | [] ->
       args.[1..], (args.[0] :: left), reqset, state
   | (optarg: 'a Option)::rest ->
       let m, args, reqset, state =
         if optarg.dummy then false, args, reqset, state
-        else arg_match optarg args reqset state
+        else argMatch optarg args reqset state
       in
       if m then args, left, reqset, state
-      else spec_loop args reqset left state rest
-and arg_match (optarg: 'a Option) args reqset state =
-  let arg_no_match = (false, args, reqset, state) in
-  let s, l = opt_string_check optarg.short optarg.long in
+      else specLoop args reqset left state rest
+and argMatch (optarg: 'a Option) args reqset state =
+  let argNoMatch = (false, args, reqset, state) in
+  let s, l = optStringCheck optarg.short optarg.long in
   let extra = optarg.extra in
   if s = args.[0] || l = args.[0] then
-    arg_match_ret optarg args reqset extra state
+    argMatchRet optarg args reqset extra state
   else if args.[0].Contains("=") then
-    let splitted_arg = args.[0].Split([|'='|], 2) in
-    if s = splitted_arg.[0] || l = splitted_arg.[0] then
-      let args = Array.concat [splitted_arg; args.[1..]] in
-      arg_match_ret optarg args reqset extra state
+    let splittedArg = args.[0].Split([|'='|], 2) in
+    if s = splittedArg.[0] || l = splittedArg.[0] then
+      let args = Array.concat [splittedArg; args.[1..]] in
+      argMatchRet optarg args reqset extra state
     else
-      arg_no_match
+      argNoMatch
   else
-    arg_no_match
-and arg_match_ret (optarg: 'a Option) args reqset extra state =
+    argNoMatch
+and argMatchRet (optarg: 'a Option) args reqset extra state =
   if (args.Length - extra) < 1 then
     rterr (sprintf "Extra arg not given for %s" args.[0])
   else
@@ -235,18 +235,18 @@ and arg_match_ret (optarg: 'a Option) args reqset extra state =
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
 (** Parse command line arguments and return a list of unmatched arguments *)
-let opt_parse (spec: 'a spec) prog (args: args) (state: 'a) =
-  let maxwidth, reqset = check_spec spec |> get_spec_info in
+let optParse (spec: 'a spec) prog (args: args) (state: 'a) =
+  let maxwidth, reqset = checkSpec spec |> getSpecInfo in
   if args.Length < 0 then
-    usage_exit_int prog spec maxwidth reqset
+    usageExitInt prog spec maxwidth reqset
   else if Array.exists (fun a -> a = "-h" || a = "--help") args then
-    usage_exit_int prog spec maxwidth reqset
+    usageExitInt prog spec maxwidth reqset
   else
     parse [] spec args reqset state
 
 (** Show usage and exit *)
-let usage_exit spec prog =
-  let maxwidth, reqset = check_spec spec |> get_spec_info in
-  usage_exit_int prog spec maxwidth reqset
+let usageExit spec prog =
+  let maxwidth, reqset = checkSpec spec |> getSpecInfo in
+  usageExitInt prog spec maxwidth reqset
 
 // vim: set tw=80 sts=2 sw=2:

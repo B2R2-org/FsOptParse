@@ -6,12 +6,12 @@ succinct and clean. It is completely written in a single F# file (fs). It is
 very intuitive to use, and also provides lots of convenient command-line parsing
 features.
 
-OptParse exposes just two functions including `opt_parse` and `usage_exit`.  The
-`opt_parse` function takes in a specification of command line options, a program
+OptParse exposes just two functions including `optParse` and `usageExit`.  The
+`optParse` function takes in a specification of command line options, a program
 name, and a list of arguments from a user as input. It then parses the input
 arguments and calls corresponding callback functions registered through the
 specification as per interpreting each encountered option. Finally, it returns a
-list of unmatched arguments. The `usage_exit` function prints out a well-formed
+list of unmatched arguments. The `usageExit` function prints out a well-formed
 usage based on a given specification, and terminates the program.
 
 Build
@@ -36,17 +36,17 @@ open OptParse
 (** defines a state to pass to the option parser *)
 type opts =
   {
-    opt_x : int;
-    opt_y : bool;
-    opt_z : string;
+    optX : int;
+    optY : bool;
+    optZ : string;
   }
 
 (** default option state *)
-let default_opts =
+let defaultOpts =
   {
-    opt_x = 0;
-    opt_y = false;
-    opt_z = "";
+    optX = 0;
+    optY = false;
+    optZ = "";
   }
 
 (*
@@ -63,17 +63,17 @@ let spec =
             (* how many extra argument must be provided by a user? *)
             extra=1,
             (* callback sets up the option and returns it *)
-            callback=(fun opts arg -> {opts with opt_x=(int) arg.[0]}),
+            callback=(fun opts arg -> {opts with optX=(int) arg.[0]}),
             (* use a short option style -x *)
             short="-x"
            );
 
     (* This option can be specified with -y. There is no extra argument. This
-       option just sets a flag, opt_y. *)
+       option just sets a flag, optY. *)
     Option ((* description of the option *)
             descr="this is a testing param Y",
             (* set the option to be true *)
-            callback=(fun opts _ -> {opts with opt_y=true}),
+            callback=(fun opts _ -> {opts with optY=true}),
             (* use a short option style (-y) *)
             short="-y",
             (* also use a long option style (--yoohoo) *)
@@ -86,8 +86,8 @@ let spec =
        variable z. *)
     Option ((* description of the option *)
             descr="required parameter <STRING> with an integer option",
-            (* callback to set the opt_z value *)
-            callback=(fun opts arg -> {opts with opt_z=arg.[0]}),
+            (* callback to set the optZ value *)
+            callback=(fun opts arg -> {opts with optZ=arg.[0]}),
             (* specifying this is a required option *)
             required=true,
             (* one additional argument to specify an integer value *)
@@ -102,9 +102,9 @@ let main (args:string[]) =
   let prog = "opttest.exe" in
   let args = System.Environment.GetCommandLineArgs () in
   try
-    let left, opts = opt_parse spec prog args default_opts in
+    let left, opts = optParse spec prog args defaultOpts in
     printfn "Rest args: %A, x: %d, y: %b, z: %s"
-      left opts.opt_x opts.opt_y opts.opt_z
+      left opts.optX opts.optY opts.optZ
     0
   with
     | SpecErr msg ->
@@ -112,5 +112,5 @@ let main (args:string[]) =
         exit 1
     | RuntimeErr msg ->
         eprintfn "invalid args given by user: %s" msg
-        usage_exit spec prog
+        usageExit spec prog
 ```

@@ -54,7 +54,7 @@ type 'a Option =
 type 'a spec = 'a Option list
 
 (** Parse command line arguments and return a list of unmatched arguments *)
-val opt_parse :
+val optParse :
      'a spec           (** command line specification *)
   -> string            (** program name *)
   -> args              (** command line args *)
@@ -62,6 +62,6 @@ val opt_parse :
   -> string list * 'a  (** list of unmatched args *)
 
 (** Show usage and exit *)
-val usage_exit : 'a spec -> string -> 'b
+val usageExit : 'a spec -> string -> 'b
 
 // vim: set tw=80 sts=2 sw=2:
