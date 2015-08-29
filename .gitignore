@@ -1,1 +1,5 @@
 build
+*.swp
+src/AssemblyInfo.fs
+packages
+.fake
