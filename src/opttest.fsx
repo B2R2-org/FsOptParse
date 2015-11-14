@@ -104,8 +104,9 @@ let spec =
 let _ =
   let prog = "opttest.fsx" in
   let args = System.Environment.GetCommandLineArgs () in
+  let helpFn msg = printf "%s" msg; exit 0
   try
-    let left, opts = optParse spec prog args default_opts in
+    let left, opts = optParse spec helpFn prog "" args default_opts in
     printfn "Rest args: %A, x: %d, y: %b, z: %s"
       left opts.optX opts.optY opts.optZ
     0
@@ -115,6 +116,6 @@ let _ =
         exit 1
     | RuntimeErr msg ->
         eprintfn "invalid args given by user: %s" msg
-        usageExit spec prog
+        usage spec prog "" (fun msg -> printf "%s" msg; exit 1)
 
 // vim: set tw=80 sts=2 sw=2:

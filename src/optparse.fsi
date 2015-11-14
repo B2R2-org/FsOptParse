@@ -26,14 +26,14 @@
 
 module OptParse
 
-(** Option parsing error *)
+(* Option parsing errors *)
 exception SpecErr of string
 exception RuntimeErr of string
 
-(** Arguments *)
+(* Arguments *)
 type args = string array
 
-(** A command line option *)
+/// <summary> A command line option. </summary>
 type 'a Option =
   class
     interface System.IEquatable<'a Option>
@@ -50,18 +50,26 @@ type 'a Option =
        -> 'a Option
   end
 
-(* The specification of command line options *)
+/// <summary> The specification of command line options. </summary>
 type 'a spec = 'a Option list
 
-(** Parse command line arguments and return a list of unmatched arguments *)
+/// <summary>
+/// Parse command line arguments and return a list of unmatched arguments.
+/// </summary>
+/// <param name="cmdStr">
+/// Specify a command line usage string. There are two format specifiers: %p for
+/// specifying a program name, and %o for specifying options.
+/// </param>
 val optParse :
-     'a spec           (** command line specification *)
-  -> string            (** program name *)
-  -> args              (** command line args *)
-  -> 'a                (** option parsing state *)
-  -> string list * 'a  (** list of unmatched args *)
+     'a spec                       (** command line specification *)
+  -> (string -> string list * 'a)  (** help callback function *)
+  -> string                        (** program name *)
+  -> string                        (** command usage string *)
+  -> args                          (** command line args *)
+  -> 'a                            (** option parsing state *)
+  -> string list * 'a              (** list of unmatched args *)
 
-(** Show usage and exit *)
-val usageExit : 'a spec -> string -> 'b
+/// <summary> Feed the usage message into a given function. </summary>
+val usage : 'a spec -> string -> string -> (string -> 'b) -> 'b
 
 // vim: set tw=80 sts=2 sw=2:
