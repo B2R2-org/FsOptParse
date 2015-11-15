@@ -1,3 +1,6 @@
+### New in 0.3.0 (Released 11/15/2015)
+* optParse now takes in a custom usage form
+
 ### New in 0.2.5 (Released 8/28/2015)
 * Changing API naming (to follow .net convention)
 
