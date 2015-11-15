@@ -36,7 +36,7 @@ type opts =
   }
 
 (** default option state *)
-let default_opts =
+let defaultOpts =
   {
     optX = 0;
     optY = false;
@@ -106,7 +106,7 @@ let _ =
   let args = System.Environment.GetCommandLineArgs ()
   let usageStr = "[Usage]\n  %p %o"
   try
-    let left, opts = optParse spec usageStr prog args default_opts
+    let left, opts = optParse spec usageStr prog args defaultOpts
     printfn "Rest args: %A, x: %d, y: %b, z: %s"
       left opts.optX opts.optY opts.optZ
     0
