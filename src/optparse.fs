@@ -55,13 +55,13 @@ let sanitizeShort (opt: string) =
 let sanitizeLong (opt: string) =
   if opt.Length = 0 then opt
   else
-    let opt = "--" + (removeDashes opt) in
+    let opt = "--" + (removeDashes opt)
     if opt.Length > 2 then opt
     else specerr (sprintf "Invalid long option %s is given" opt)
 
 (** command line option *)
 type 'a Option (descr, ?callback, ?required, ?extra, ?short, ?long, ?dummy) =
-  let defaultCB opts (_args:args) = opts in
+  let defaultCB opts (_args:args) = opts
 
   member this.descr : string = descr
   member this.callback : ('a -> args -> 'a) = defaultArg callback defaultCB
@@ -118,8 +118,8 @@ let optStringCheck short long =
   else short, long
 
 let fullOptStr (opt:'a Option) =
-  let l = opt.long.Length in
-  let s = opt.short.Length in
+  let l = opt.long.Length
+  let s = opt.short.Length
   if l > 0 && s > 0 then
     opt.short + "," + opt.long + (extraString opt.extra opt.descr)
   else if l > 0 then
@@ -129,7 +129,7 @@ let fullOptStr (opt:'a Option) =
 
 let reqOpts reqset =
   Set.fold (fun (sb: System.Text.StringBuilder) (reqopt: 'a Option) ->
-    let short, long = optStringCheck reqopt.short reqopt.long in
+    let short, long = optStringCheck reqopt.short reqopt.long
     if short.Length = 0 then
       sprintf "%s%s " long (extraString reqopt.extra reqopt.descr) |> sb.Append
     else
@@ -139,28 +139,27 @@ let reqOpts reqset =
                 (sb.ToString ()).Trim())
 
 (** show usage and exit *)
-let usageExec prog cmdStr (spec: 'a spec) maxwidth reqset fn =
+let usageExec prog usageForm (spec: 'a spec) maxwidth reqset fn =
   let spaceFill (str: string) =
-    let margin = 5 in
-    let space = maxwidth - str.Length + margin in
+    let margin = 5
+    let space = maxwidth - str.Length + margin
     String.concat "" (rep [] " " space)
-  in
   let sb = new System.Text.StringBuilder ()
   let sbAppend (str: string) = sb.Append str |> ignore
   (* printing a simple usage *)
-  let cmdStr = if String.length cmdStr = 0 then "Usage: %p %o" else cmdStr
-  let cmdStr = cmdStr.Replace ("%p", prog)
-  let cmdStr = cmdStr.Replace ("%o", reqOpts reqset)
+  let usageForm = if String.length usageForm = 0 then "Usage: %p %o" else usageForm
+  let usageForm = usageForm.Replace ("%p", prog)
+  let usageForm = usageForm.Replace ("%o", reqOpts reqset)
   (* required option must be presented in the usage *)
-  sbAppend cmdStr
+  sbAppend usageForm
   sbAppend "\n\n"
   (* printing a list of options *)
   List.iter (fun (optarg: 'a Option) ->
     if optarg.dummy then
       sprintf "%s\n" optarg.descr |> sbAppend
     else
-      let _short, _long = optStringCheck optarg.short optarg.long in
-      let optstr = fullOptStr optarg in
+      let _short, _long = optStringCheck optarg.short optarg.long
+      let optstr = fullOptStr optarg
       sprintf "%s%s: %s\n" optstr (spaceFill optstr) optarg.descr |> sbAppend
   ) spec
   "\n" |> sbAppend
@@ -176,29 +175,26 @@ let setUpdate (opt: string) optset =
     optset
 
 let checkSpec (spec: 'a spec) =
-  let optset : Set<string> = Set.empty |> Set.add "-h" |> Set.add "--help" in
-  let _ =
+  let _optset =
     List.fold (fun optset (opt: 'a Option) ->
       if opt.dummy then
         optset
       else
-        let short, long = optStringCheck opt.short opt.long in
+        let short, long = optStringCheck opt.short opt.long
         setUpdate short optset |> setUpdate long
-    ) optset spec
+    ) Set.empty<string> spec
   in
   spec
 
 let getSpecInfo (spec: 'a spec) =
   List.fold (fun (width, (reqset: Set<'a Option>)) (optarg: 'a Option) ->
     let w =
-      let opt = fullOptStr optarg in
-      let newwidth = opt.Length in
+      let opt = fullOptStr optarg
+      let newwidth = opt.Length
       if newwidth > width then newwidth else width
-    in
     let r =
       if optarg.required && not optarg.dummy then Set.add optarg reqset
       else reqset
-    in
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
 
@@ -207,7 +203,7 @@ let rec parse left (spec: 'a spec) (args: args) reqset state =
     if Set.isEmpty reqset then List.rev left, state
     else rterr "Required arguments not provided"
   else
-    let args, left, reqset, state = specLoop args reqset left state spec in
+    let args, left, reqset, state = specLoop args reqset left state spec
     parse left spec args reqset state
 and specLoop args reqset left state = function
   | [] ->
@@ -216,19 +212,18 @@ and specLoop args reqset left state = function
       let m, args, reqset, state =
         if optarg.dummy then false, args, reqset, state
         else argMatch optarg args reqset state
-      in
       if m then args, left, reqset, state
       else specLoop args reqset left state rest
 and argMatch (optarg: 'a Option) args reqset state =
-  let argNoMatch = (false, args, reqset, state) in
-  let s, l = optStringCheck optarg.short optarg.long in
-  let extra = optarg.extra in
+  let argNoMatch = (false, args, reqset, state)
+  let s, l = optStringCheck optarg.short optarg.long
+  let extra = optarg.extra
   if s = args.[0] || l = args.[0] then
     argMatchRet optarg args reqset extra state
   else if args.[0].Contains("=") then
-    let splittedArg = args.[0].Split([|'='|], 2) in
+    let splittedArg = args.[0].Split([|'='|], 2)
     if s = splittedArg.[0] || l = splittedArg.[0] then
-      let args = Array.concat [splittedArg; args.[1..]] in
+      let args = Array.concat [splittedArg; args.[1..]]
       argMatchRet optarg args reqset extra state
     else
       argNoMatch
@@ -241,23 +236,20 @@ and argMatchRet (optarg: 'a Option) args reqset extra state =
     let state': 'a =
       try optarg.callback state args.[1..extra]
       with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
-    in
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
 let noArgs msg = printf "%s" msg; raise (RuntimeErr "No argument given")
 
 (** Parse command line arguments and return a list of unmatched arguments *)
-let optParse (spec: 'a spec) cbHelp prog cmdStr (args: args) (state: 'a) =
-  let maxwidth, reqset = checkSpec spec |> getSpecInfo in
+let optParse (spec: 'a spec) usageForm prog (args: args) (state: 'a) =
+  let maxwidth, reqset = checkSpec spec |> getSpecInfo
   if args.Length < 0 then
-    usageExec prog cmdStr spec maxwidth reqset noArgs
-  else if Array.exists (fun a -> a = "-h" || a = "--help") args then
-    usageExec prog cmdStr spec maxwidth reqset cbHelp
+    usageExec prog usageForm spec maxwidth reqset noArgs
   else
     parse [] spec args reqset state
 
-let usage spec prog cmdStr fn =
-  let maxwidth, reqset = checkSpec spec |> getSpecInfo in
-  usageExec prog cmdStr spec maxwidth reqset fn
+let usage spec prog usageForm fn =
+  let maxwidth, reqset = checkSpec spec |> getSpecInfo
+  usageExec prog usageForm spec maxwidth reqset fn
 
 // vim: set tw=80 sts=2 sw=2:

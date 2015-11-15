@@ -56,15 +56,14 @@ type 'a spec = 'a Option list
 /// <summary>
 /// Parse command line arguments and return a list of unmatched arguments.
 /// </summary>
-/// <param name="cmdStr">
+/// <param name="usageForm">
 /// Specify a command line usage string. There are two format specifiers: %p for
 /// specifying a program name, and %o for specifying options.
 /// </param>
 val optParse :
      'a spec                       (** command line specification *)
-  -> (string -> string list * 'a)  (** help callback function *)
   -> string                        (** program name *)
-  -> string                        (** command usage string *)
+  -> string                        (** usage form *)
   -> args                          (** command line args *)
   -> 'a                            (** option parsing state *)
   -> string list * 'a              (** list of unmatched args *)
