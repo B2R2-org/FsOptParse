@@ -60,13 +60,14 @@ let sanitizeLong (opt: string) =
     else specerr (sprintf "Invalid long option %s is given" opt)
 
 (** command line option *)
-type 'a Option (descr, ?callback, ?required, ?extra, ?short, ?long, ?dummy) =
+type 'a Option (descr, ?callback, ?required, ?extra, ?help, ?short, ?long, ?dummy) =
   let defaultCB opts (_args:args) = opts
 
   member this.descr : string = descr
   member this.callback : ('a -> args -> 'a) = defaultArg callback defaultCB
   member this.required : bool = defaultArg required false
   member this.extra : int = defaultArg extra 0 |> sanitizeExtra
+  member this.help: bool = defaultArg help false
   member this.short : string = defaultArg short "" |> sanitizeShort
   member this.long : string = defaultArg long "" |> sanitizeLong
   member this.dummy : bool = defaultArg dummy false
@@ -198,55 +199,55 @@ let getSpecInfo (spec: 'a spec) =
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
 
-let rec parse left (spec: 'a spec) (args: args) reqset state =
+let rec parse left (spec: 'a spec) (args: args) reqset usage state =
   if args.Length <= 0 then
     if Set.isEmpty reqset then List.rev left, state
     else rterr "Required arguments not provided"
   else
-    let args, left, reqset, state = specLoop args reqset left state spec
-    parse left spec args reqset state
-and specLoop args reqset left state = function
+    let args, left, reqset, state = specLoop args reqset left usage state spec
+    parse left spec args reqset usage state
+and specLoop args reqset left usage state = function
   | [] ->
       args.[1..], (args.[0] :: left), reqset, state
   | (optarg: 'a Option)::rest ->
       let m, args, reqset, state =
         if optarg.dummy then false, args, reqset, state
-        else argMatch optarg args reqset state
+        else argMatch optarg args reqset usage state
       if m then args, left, reqset, state
-      else specLoop args reqset left state rest
-and argMatch (optarg: 'a Option) args reqset state =
+      else specLoop args reqset left usage state rest
+and argMatch (optarg: 'a Option) args reqset usage state =
   let argNoMatch = (false, args, reqset, state)
   let s, l = optStringCheck optarg.short optarg.long
   let extra = optarg.extra
   if s = args.[0] || l = args.[0] then
-    argMatchRet optarg args reqset extra state
+    argMatchRet optarg args reqset extra usage state
   else if args.[0].Contains("=") then
     let splittedArg = args.[0].Split([|'='|], 2)
     if s = splittedArg.[0] || l = splittedArg.[0] then
       let args = Array.concat [splittedArg; args.[1..]]
-      argMatchRet optarg args reqset extra state
+      argMatchRet optarg args reqset extra usage state
     else
       argNoMatch
   else
     argNoMatch
-and argMatchRet (optarg: 'a Option) args reqset extra state =
+and argMatchRet (optarg: 'a Option) args reqset extra usage state =
   if (args.Length - extra) < 1 then
     rterr (sprintf "Extra arg not given for %s" args.[0])
+  else if optarg.help then
+    usage (); rterr "Show usage"
   else
     let state': 'a =
       try optarg.callback state args.[1..extra]
       with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
-let noArgs msg = printf "%s" msg; raise (RuntimeErr "No argument given")
-
 (** Parse command line arguments and return a list of unmatched arguments *)
 let optParse (spec: 'a spec) usageForm prog (args: args) (state: 'a) =
+  let noArgs msg = printf "%s" msg
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  if args.Length < 0 then
-    usageExec prog usageForm spec maxwidth reqset noArgs
-  else
-    parse [] spec args reqset state
+  let usage () = usageExec prog usageForm spec maxwidth reqset noArgs
+  if args.Length < 0 then usage (); rterr "No argument given"
+  else parse [] spec args reqset usage state
 
 let usage spec prog usageForm fn =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo

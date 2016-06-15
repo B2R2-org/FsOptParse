@@ -44,6 +44,7 @@ type 'a Option =
         * ?callback : ('a -> args -> 'a)
         * ?required : bool
         * ?extra    : int
+        * ?help     : bool
         * ?short    : string
         * ?long     : string
         * ?dummy    : bool
