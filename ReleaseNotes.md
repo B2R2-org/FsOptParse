@@ -1,3 +1,6 @@
+### New in 0.3.1 (Released 6/15/2016)
+* Added a help attribute
+
 ### New in 0.3.0 (Released 11/15/2015)
 * optParse now takes in a custom usage form
 
