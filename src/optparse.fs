@@ -234,7 +234,7 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
   if (args.Length - extra) < 1 then
     rterr (sprintf "Extra arg not given for %s" args.[0])
   else if optarg.help then
-    usage (); rterr "Show usage"
+    usage (); exit 0
   else
     let state': 'a =
       try optarg.callback state args.[1..extra]

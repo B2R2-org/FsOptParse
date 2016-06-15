@@ -1,3 +1,6 @@
+### New in 0.3.2 (Released 6/15/2016)
+* Minor bug fix
+
 ### New in 0.3.1 (Released 6/15/2016)
 * Added a help attribute
 
@@ -8,7 +11,7 @@
 * Changing API naming (to follow .net convention)
 
 ### New in 0.2.4 (Released 8/13/2015)
-* A minor bug fix
+* Minor bug fix
 
 ### New in 0.2.3 (Released 8/13/2015)
 * Handling a no-argument case
