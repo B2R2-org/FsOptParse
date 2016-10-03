@@ -1,6 +1,8 @@
 build
 *.swp
 src/AssemblyInfo.fs
+src/bin
+src/obj
 packages
 .fake
 .vs

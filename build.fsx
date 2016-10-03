@@ -2,14 +2,15 @@
 #r "packages/FAKE/tools/FakeLib.dll"
 open Fake
 open Fake.AssemblyInfoFile
-open Fake.FscHelper
 
-let projDesc = "A tiny, but powerful option parsing library written in a single F# file"
+let projDesc =
+  "A tiny, but powerful option parsing library written in a single F# file"
 let releaseNotes =
   ReadFile "ReleaseNotes.md"
   |> ReleaseNotesHelper.parseReleaseNotes
 
-let buildDir = "./build/"
+let buildMode = getBuildParamOrDefault "buildMode" "Release"
+let buildDir = "./src/bin/Release/"
 let packagingRoot = "./packaging/"
 let packagingDir = packagingRoot @@ "OptParse"
 
@@ -29,17 +30,20 @@ Target "AssemblyInfo" (fun _ ->
 )
 
 Target "Default" (fun _ ->
-  ["src/AssemblyInfo.fs"; "src/OptParse.fsi"; "src/OptParse.fs"]
-  |> Fsc (fun p ->
-           {p with Output = buildDir @@ "OptParse.dll"
-                   FscTarget = Library
-                   OtherParams = ["--warnaserror:76";
-                                  "--warn:3";
-                                  "--checked+";
-                                  "--doc:" + (buildDir @@ "OptParse.xml");
-                                  "--optimize+"]
-           }
-         )
+  let setParams defaults =
+    {defaults with
+      Verbosity = Some (Normal)
+      Targets = ["Build"]
+      Properties =
+        [
+          "Optimize", "True"
+          "DebugSymbols", "True"
+          "Configuration", buildMode
+          "AllowedReferenceRelatedFileExtensions", "none"
+        ]
+      ToolsVersion = if isMono then Some "12.0" else None
+    }
+  build setParams "src/OptParse.fsproj" |> DoNothing
 )
 
 Target "CreatePackage" (fun _ ->
