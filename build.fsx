@@ -50,6 +50,7 @@ Target "CreatePackage" (fun _ ->
   let net45Dir = packagingDir @@ "lib/net45/"
   CleanDir net45Dir
   CopyFile net45Dir (buildDir @@ "OptParse.dll")
+  CopyFile net45Dir (buildDir @@ "OptParse.pdb")
   CopyFile net45Dir (buildDir @@ "OptParse.xml")
   CopyFiles packagingDir ["LICENSE"; "README.md"; "ReleaseNotes.md"]
   NuGet

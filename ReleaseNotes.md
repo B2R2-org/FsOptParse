@@ -1,3 +1,6 @@
+### New in 0.4.1 (Released 10/03/2016)
+* Minor bug fix
+
 ### New in 0.4.0 (Released 10/03/2016)
 * Changed an API for usage printing
 * Added a descrColor attribute
