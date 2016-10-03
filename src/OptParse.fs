@@ -36,7 +36,7 @@ exception RuntimeErr of string
 let specerr msg = raise (SpecErr msg)
 let rterr msg = raise (RuntimeErr msg)
 
-type args = string array
+type Args = string array
 
 let sanitizeExtra (n: int) =
   if n < 0 then specerr "Extra field should be positive"
@@ -61,10 +61,10 @@ let sanitizeLong (opt: string) =
 
 (** command line option *)
 type 'a Option (descr, ?callback, ?required, ?extra, ?help, ?short, ?long, ?dummy) =
-  let defaultCB opts (_args:args) = opts
+  let defaultCB opts (_args:Args) = opts
 
   member this.descr : string = descr
-  member this.callback : ('a -> args -> 'a) = defaultArg callback defaultCB
+  member this.callback : ('a -> Args -> 'a) = defaultArg callback defaultCB
   member this.required : bool = defaultArg required false
   member this.extra : int = defaultArg extra 0 |> sanitizeExtra
   member this.help: bool = defaultArg help false
@@ -199,7 +199,7 @@ let getSpecInfo (spec: 'a spec) =
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
 
-let rec parse left (spec: 'a spec) (args: args) reqset usage state =
+let rec parse left (spec: 'a spec) (args: Args) reqset usage state =
   if args.Length <= 0 then
     if Set.isEmpty reqset then List.rev left, state
     else rterr "Required arguments not provided"
@@ -242,8 +242,8 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
 (** Parse command line arguments and return a list of unmatched arguments *)
-let optParse (spec: 'a spec) usageForm prog (args: args) (state: 'a) =
-  let noArgs msg = printf "%s" msg
+let optParse spec usageForm prog (args: Args) state =
+  let noArgs (msg: string) = Console.Write msg
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
   let usage () = usageExec prog usageForm spec maxwidth reqset noArgs
   if args.Length < 0 then usage (); rterr "No argument given"

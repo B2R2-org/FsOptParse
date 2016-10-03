@@ -3,3 +3,4 @@ build
 src/AssemblyInfo.fs
 packages
 .fake
+.vs

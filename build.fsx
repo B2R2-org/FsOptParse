@@ -29,7 +29,7 @@ Target "AssemblyInfo" (fun _ ->
 )
 
 Target "Default" (fun _ ->
-  ["src/AssemblyInfo.fs"; "src/optparse.fsi"; "src/optparse.fs"]
+  ["src/AssemblyInfo.fs"; "src/OptParse.fsi"; "src/OptParse.fs"]
   |> Fsc (fun p ->
            {p with Output = buildDir @@ "OptParse.dll"
                    FscTarget = Library

@@ -31,7 +31,7 @@ exception SpecErr of string
 exception RuntimeErr of string
 
 (* Arguments *)
-type args = string array
+type Args = string array
 
 /// <summary> A command line option. </summary>
 type 'a Option =
@@ -41,7 +41,7 @@ type 'a Option =
     interface System.IComparable<'a Option>
 
     new : descr     : string
-        * ?callback : ('a -> args -> 'a)
+        * ?callback : ('a -> Args -> 'a)
         * ?required : bool
         * ?extra    : int
         * ?help     : bool
@@ -62,14 +62,14 @@ type 'a spec = 'a Option list
 /// specifying a program name, and %o for specifying options.
 /// </param>
 val optParse :
-     'a spec                       (** command line specification *)
-  -> string                        (** program name *)
-  -> string                        (** usage form *)
-  -> args                          (** command line args *)
-  -> 'a                            (** option parsing state *)
-  -> string list * 'a              (** list of unmatched args *)
+     'a spec                       /// Command line specification
+  -> string                        /// Program name
+  -> string                        /// Usage form
+  -> Args                          /// Command line args
+  -> 'a                            /// Option parsing state
+  -> string list * 'a              /// List of unmatched args
 
-/// <summary> Feed the usage message into a given function. </summary>
+/// Feed the usage message into a given function.
 val usage : 'a spec -> string -> string -> (string -> 'b) -> 'b
 
 // vim: set tw=80 sts=2 sw=2:
