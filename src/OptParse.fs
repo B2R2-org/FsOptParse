@@ -60,10 +60,11 @@ let sanitizeLong (opt: string) =
     else specerr (sprintf "Invalid long option %s is given" opt)
 
 (** command line option *)
-type 'a Option (descr, ?callback, ?required, ?extra, ?help, ?short, ?long, ?dummy) =
+type 'a Option (descr, ?callback, ?required, ?extra, ?help, ?short, ?long, ?dummy, ?descrColor) =
   let defaultCB opts (_args:Args) = opts
 
   member this.descr : string = descr
+  member this.descrColor : ConsoleColor option = descrColor
   member this.callback : ('a -> Args -> 'a) = defaultArg callback defaultCB
   member this.required : bool = defaultArg required false
   member this.extra : int = defaultArg extra 0 |> sanitizeExtra
@@ -139,8 +140,16 @@ let reqOpts reqset =
   |> (fun sb -> let sb = sb.Append "[opts...]"
                 (sb.ToString ()).Trim())
 
+let setColor = function
+  | None -> ()
+  | Some color -> Console.ForegroundColor <- color
+
+let clearColor = function
+  | None -> ()
+  | Some _ -> Console.ResetColor ()
+
 (** show usage and exit *)
-let usageExec prog usageForm (spec: 'a spec) maxwidth reqset termFn =
+let usageExec prog usageForm (spec: 'a spec) maxwidth reqset beginFn termFn =
   let spaceFill (str: string) =
     let margin = 5
     let space = maxwidth - str.Length + margin
@@ -149,17 +158,21 @@ let usageExec prog usageForm (spec: 'a spec) maxwidth reqset termFn =
   let usageForm = if String.length usageForm = 0 then "Usage: %p %o" else usageForm
   let usageForm = usageForm.Replace ("%p", prog)
   let usageForm = usageForm.Replace ("%o", reqOpts reqset)
+  (* Start *)
+  beginFn ()
   (* required option must be presented in the usage *)
   Console.Write usageForm
   Console.Write "\n\n"
   (* printing a list of options *)
   List.iter (fun (optarg: 'a Option) ->
+    setColor optarg.descrColor
     if optarg.dummy then
       sprintf "%s\n" optarg.descr |> Console.Write
     else
       let _short, _long = optStringCheck optarg.short optarg.long
       let optstr = fullOptStr optarg
       sprintf "%s%s: %s\n" optstr (spaceFill optstr) optarg.descr |> Console.Write
+    clearColor optarg.descrColor
   ) spec
   "\n" |> Console.Write
   termFn ()
@@ -243,12 +256,12 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
 let optParse spec usageForm prog (args: Args) state =
   let noArgs () = ()
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  let usage () = usageExec prog usageForm spec maxwidth reqset noArgs
+  let usage () = usageExec prog usageForm spec maxwidth reqset noArgs noArgs
   if args.Length < 0 then usage (); rterr "No argument given"
   else parse [] spec args reqset usage state
 
-let usagePrint spec prog usageForm termFn =
+let usagePrint spec prog usageForm beginFn termFn =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  usageExec prog usageForm spec maxwidth reqset termFn
+  usageExec prog usageForm spec maxwidth reqset beginFn termFn
 
 // vim: set tw=80 sts=2 sw=2:

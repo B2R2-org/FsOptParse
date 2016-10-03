@@ -113,5 +113,5 @@ let main (args:string[]) =
         exit 1
     | RuntimeErr msg ->
         eprintfn "Invalid args given by user: %s" msg
-        usagePrint spec prog usageStr (fun () -> exit 1)
+        usagePrint spec prog usageStr ignore (fun () -> exit 1)
 ```

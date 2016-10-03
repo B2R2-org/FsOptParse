@@ -40,14 +40,15 @@ type 'a Option =
     interface System.IComparable
     interface System.IComparable<'a Option>
 
-    new : descr     : string
-        * ?callback : ('a -> Args -> 'a)
-        * ?required : bool
-        * ?extra    : int
-        * ?help     : bool
-        * ?short    : string
-        * ?long     : string
-        * ?dummy    : bool
+    new : descr       : string
+        * ?callback   : ('a -> Args -> 'a)
+        * ?required   : bool
+        * ?extra      : int
+        * ?help       : bool
+        * ?short      : string
+        * ?long       : string
+        * ?dummy      : bool
+        * ?descrColor : System.ConsoleColor
        -> 'a Option
   end
 
@@ -74,7 +75,8 @@ val usagePrint :
      'a spec
   -> prog: string
   -> usageForm: string
-  -> termFn: (unit -> 'b)          /// A callback function for termination
+  -> beginFn: (unit -> unit)       /// A callback function at the beginning
+  -> termFn: (unit -> 'b)          /// A callback function at the end
   -> 'b
 
 // vim: set tw=80 sts=2 sw=2:
