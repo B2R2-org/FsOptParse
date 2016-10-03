@@ -140,31 +140,29 @@ let reqOpts reqset =
                 (sb.ToString ()).Trim())
 
 (** show usage and exit *)
-let usageExec prog usageForm (spec: 'a spec) maxwidth reqset fn =
+let usageExec prog usageForm (spec: 'a spec) maxwidth reqset termFn =
   let spaceFill (str: string) =
     let margin = 5
     let space = maxwidth - str.Length + margin
     String.concat "" (rep [] " " space)
-  let sb = new System.Text.StringBuilder ()
-  let sbAppend (str: string) = sb.Append str |> ignore
   (* printing a simple usage *)
   let usageForm = if String.length usageForm = 0 then "Usage: %p %o" else usageForm
   let usageForm = usageForm.Replace ("%p", prog)
   let usageForm = usageForm.Replace ("%o", reqOpts reqset)
   (* required option must be presented in the usage *)
-  sbAppend usageForm
-  sbAppend "\n\n"
+  Console.Write usageForm
+  Console.Write "\n\n"
   (* printing a list of options *)
   List.iter (fun (optarg: 'a Option) ->
     if optarg.dummy then
-      sprintf "%s\n" optarg.descr |> sbAppend
+      sprintf "%s\n" optarg.descr |> Console.Write
     else
       let _short, _long = optStringCheck optarg.short optarg.long
       let optstr = fullOptStr optarg
-      sprintf "%s%s: %s\n" optstr (spaceFill optstr) optarg.descr |> sbAppend
+      sprintf "%s%s: %s\n" optstr (spaceFill optstr) optarg.descr |> Console.Write
   ) spec
-  "\n" |> sbAppend
-  sb.ToString() |> fn
+  "\n" |> Console.Write
+  termFn ()
 
 let setUpdate (opt: string) optset =
   if opt.Length > 0 then
@@ -243,14 +241,14 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
 
 (** Parse command line arguments and return a list of unmatched arguments *)
 let optParse spec usageForm prog (args: Args) state =
-  let noArgs (msg: string) = Console.Write msg
+  let noArgs () = ()
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
   let usage () = usageExec prog usageForm spec maxwidth reqset noArgs
   if args.Length < 0 then usage (); rterr "No argument given"
   else parse [] spec args reqset usage state
 
-let usage spec prog usageForm fn =
+let usagePrint spec prog usageForm termFn =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  usageExec prog usageForm spec maxwidth reqset fn
+  usageExec prog usageForm spec maxwidth reqset termFn
 
 // vim: set tw=80 sts=2 sw=2:

@@ -116,6 +116,6 @@ let _ =
         exit 1
     | RuntimeErr msg ->
         eprintfn "Invalid args given by user: %s" msg
-        usage spec prog usageStr (fun msg -> printf "%s" msg; exit 1)
+        usagePrint spec prog usageStr (fun () -> exit 1)
 
 // vim: set tw=80 sts=2 sw=2:

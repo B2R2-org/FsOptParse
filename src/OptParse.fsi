@@ -63,13 +63,18 @@ type 'a spec = 'a Option list
 /// </param>
 val optParse :
      'a spec                       /// Command line specification
-  -> string                        /// Program name
-  -> string                        /// Usage form
+  -> usageForm: string             /// Usage form
+  -> prog: string                  /// Program
   -> Args                          /// Command line args
   -> 'a                            /// Option parsing state
   -> string list * 'a              /// List of unmatched args
 
-/// Feed the usage message into a given function.
-val usage : 'a spec -> string -> string -> (string -> 'b) -> 'b
+/// Print the usage message.
+val usagePrint :
+     'a spec
+  -> prog: string
+  -> usageForm: string
+  -> termFn: (unit -> 'b)          /// A callback function for termination
+  -> 'b
 
 // vim: set tw=80 sts=2 sw=2:
