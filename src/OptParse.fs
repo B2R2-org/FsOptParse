@@ -29,7 +29,6 @@ module OptParse
 open System
 open System.Text.RegularExpressions
 
-(** Option parsing error *)
 exception SpecErr of string
 exception RuntimeErr of string
 
@@ -59,8 +58,8 @@ let sanitizeLong (opt: string) =
     if opt.Length > 2 then opt
     else specerr (sprintf "Invalid long option %s is given" opt)
 
-(** command line option *)
-type 'a Option (descr, ?callback, ?required, ?extra, ?help, ?short, ?long, ?dummy, ?descrColor) =
+type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
+                        ?short, ?long, ?dummy, ?descrColor ) =
   let defaultCB opts (_args:Args) = opts
 
   member this.descr : string = descr
@@ -95,7 +94,6 @@ type 'a Option (descr, ?callback, ?required, ?extra, ?help, ?short, ?long, ?dumm
   override this.GetHashCode () =
     hash (this.short, this.long)
 
-(* The specification of command line options *)
 type 'a spec = 'a Option list
 
 let rec rep acc ch n =
@@ -119,7 +117,7 @@ let optStringCheck short long =
   if short = "" && long = "" then specerr "Optstring not given"
   else short, long
 
-let fullOptStr (opt:'a Option) =
+let fullOptStr (opt: 'a Option) =
   let l = opt.long.Length
   let s = opt.short.Length
   if l > 0 && s > 0 then
@@ -137,8 +135,7 @@ let reqOpts reqset =
     else
       sprintf "%s%s " short (extraString reqopt.extra reqopt.descr) |> sb.Append
   ) (new System.Text.StringBuilder ()) reqset
-  |> (fun sb -> let sb = sb.Append "[opts...]"
-                (sb.ToString ()).Trim())
+  |> (fun sb -> let sb = sb.Append "[opts...]" in (sb.ToString ()).Trim())
 
 let setColor = function
   | None -> ()
@@ -148,31 +145,31 @@ let clearColor = function
   | None -> ()
   | Some _ -> Console.ResetColor ()
 
-(** show usage and exit *)
-let usageExec prog usageForm (spec: 'a spec) maxwidth reqset beginFn termFn =
+/// Show usage and exit.
+let usageExec prog usgForm (spec: 'a spec) maxwidth reqset beginFn termFn =
   let spaceFill (str: string) =
     let margin = 5
     let space = maxwidth - str.Length + margin
     String.concat "" (rep [] " " space)
   (* printing a simple usage *)
-  let usageForm = if String.length usageForm = 0 then "Usage: %p %o" else usageForm
-  let usageForm = usageForm.Replace ("%p", prog)
-  let usageForm = usageForm.Replace ("%o", reqOpts reqset)
+  let usgForm = if String.length usgForm = 0 then "Usage: %p %o" else usgForm
+  let usgForm = usgForm.Replace ("%p", prog)
+  let usgForm = usgForm.Replace ("%o", reqOpts reqset)
   (* Start *)
   beginFn ()
   (* required option must be presented in the usage *)
-  Console.Write usageForm
+  Console.Write usgForm
   Console.Write "\n\n"
   (* printing a list of options *)
-  List.iter (fun (optarg: 'a Option) ->
-    setColor optarg.descrColor
-    if optarg.dummy then
-      sprintf "%s\n" optarg.descr |> Console.Write
+  List.iter (fun (opt: 'a Option) ->
+    setColor opt.descrColor
+    if opt.dummy then
+      sprintf "%s\n" opt.descr |> Console.Write
     else
-      let _short, _long = optStringCheck optarg.short optarg.long
-      let optstr = fullOptStr optarg
-      sprintf "%s%s: %s\n" optstr (spaceFill optstr) optarg.descr |> Console.Write
-    clearColor optarg.descrColor
+      let _short, _long = optStringCheck opt.short opt.long
+      let optstr = fullOptStr opt
+      sprintf "%s%s: %s\n" optstr (spaceFill optstr) opt.descr |> Console.Write
+    clearColor opt.descrColor
   ) spec
   "\n" |> Console.Write
   termFn ()
@@ -252,7 +249,7 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
       with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
-(** Parse command line arguments and return a list of unmatched arguments *)
+/// Parse command line arguments and return a list of unmatched arguments.
 let optParse spec usageForm prog (args: Args) state =
   let noArgs () = ()
   let maxwidth, reqset = checkSpec spec |> getSpecInfo

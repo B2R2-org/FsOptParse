@@ -26,14 +26,16 @@
 
 module OptParse
 
-(* Option parsing errors *)
+/// Invalid spec definition is found.
 exception SpecErr of string
+
+/// User's input does not follow the spec.
 exception RuntimeErr of string
 
-(* Arguments *)
+/// Command-line arguments.
 type Args = string array
 
-/// <summary> A command line option. </summary>
+/// A command line option.
 type 'a Option =
   class
     interface System.IEquatable<'a Option>
@@ -52,31 +54,34 @@ type 'a Option =
        -> 'a Option
   end
 
-/// <summary> The specification of command line options. </summary>
+/// The specification of command line options.
 type 'a spec = 'a Option list
 
-/// <summary>
 /// Parse command line arguments and return a list of unmatched arguments.
-/// </summary>
-/// <param name="usageForm">
-/// Specify a command line usage string. There are two format specifiers: %p for
-/// specifying a program name, and %o for specifying options.
-/// </param>
-val optParse :
-     'a spec                       /// Command line specification
-  -> usageForm: string             /// Usage form
-  -> prog: string                  /// Program
-  -> Args                          /// Command line args
-  -> 'a                            /// Option parsing state
-  -> string list * 'a              /// List of unmatched args
+val optParse:
+     // Command line specification
+     'a spec
+     // Usage form specifies a command line usage string. There are two format
+     // specifiers: %p for a program name, and %o for options.
+  -> usageForm: string
+     // Program
+  -> prog: string
+     // Command line args
+  -> Args
+     // Data storing the initial option values
+  -> 'a
+     // Returns a list of unmatched (non-option) args and the final option data
+  -> string list * 'a
 
 /// Print the usage message.
-val usagePrint :
+val usagePrint:
      'a spec
   -> prog: string
   -> usageForm: string
-  -> beginFn: (unit -> unit)       /// A callback function at the beginning
-  -> termFn: (unit -> 'b)          /// A callback function at the end
+     // A callback function called at the beginning of usagePrint
+  -> beginFn: (unit -> unit)
+     // A callback function called at the end of usagePrint
+  -> termFn: (unit -> 'b)
   -> 'b
 
 // vim: set tw=80 sts=2 sw=2:
