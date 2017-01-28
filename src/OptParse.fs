@@ -146,7 +146,7 @@ let clearColor = function
   | Some _ -> Console.ResetColor ()
 
 /// Show usage and exit.
-let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset =
+let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset termFn =
   let spaceFill (str: string) =
     let margin = 5
     let space = maxwidth - str.Length + margin
@@ -171,6 +171,7 @@ let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset =
     clearColor opt.descrColor
   ) spec
   "\n" |> Console.Write
+  termFn ()
 
 let setUpdate (opt: string) optset =
   if opt.Length > 0 then
@@ -250,12 +251,12 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
 /// Parse command line arguments and return a list of unmatched arguments.
 let optParse spec usageGetter prog (args: Args) state =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  let usage () = usageExec prog usageGetter spec maxwidth reqset
+  let usage () = usageExec prog usageGetter spec maxwidth reqset ignore
   if args.Length < 0 then usage (); rterr "No argument given"
   else parse [] spec args reqset usage state
 
-let usagePrint spec prog usageGetter =
+let usagePrint spec prog usageGetter termFn =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  usageExec prog usageGetter spec maxwidth reqset
+  usageExec prog usageGetter spec maxwidth reqset termFn
 
 // vim: set tw=80 sts=2 sw=2:

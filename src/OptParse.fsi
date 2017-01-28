@@ -79,6 +79,8 @@ val usagePrint:
      'a Spec
   -> prog: string
   -> usageGetter: (unit -> string)
-  -> unit
+   /// A callback function called at the end of usagePrint.
+  -> termFn: (unit -> 'b)
+  -> 'b
 
 // vim: set tw=80 sts=2 sw=2:

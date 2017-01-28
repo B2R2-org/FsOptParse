@@ -80,6 +80,17 @@ let spec =
             long="--yoohoo"
            );
 
+    (* A dummy option to pretty-print the usage *)
+    Option ((* description of the option *)
+            descr="",
+            dummy=true
+           );
+    Option ((* description of the option *)
+            descr="[Required Options]",
+            descrColor=System.ConsoleColor.DarkCyan,
+            dummy=true
+           );
+
     (* The third option is a required option. In other words, option parsing
        will raise an exception if this option is not given by a user. This
        option takes in an additional integer argument, and set it to the global
@@ -101,9 +112,9 @@ let spec =
 let main (args:string[]) =
   let prog = "opttest.fsx"
   let args = System.Environment.GetCommandLineArgs ()
-  let usageStr = "[Usage]\n  %p %o"
+  let usageGetter () = "[Usage]\n  %p %o"
   try
-    let left, opts = optParse spec usageStr prog args defaultOpts
+    let left, opts = optParse spec usageGetter prog args defaultOpts
     printfn "Rest args: %A, x: %d, y: %b, z: %s"
       left opts.optX opts.optY opts.optZ
     0
@@ -113,5 +124,5 @@ let main (args:string[]) =
         exit 1
     | RuntimeErr msg ->
         eprintfn "Invalid args given by user: %s" msg
-        usagePrint spec prog usageStr ignore (fun () -> exit 1)
+        usagePrint spec prog usageGetter (fun () -> exit 1)
 ```
