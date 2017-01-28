@@ -1,3 +1,6 @@
+### New in 0.4.2 (Released 01/28/2017)
+* Removed unnecessary callback functions
+
 ### New in 0.4.1 (Released 10/03/2016)
 * Minor bug fix
 
