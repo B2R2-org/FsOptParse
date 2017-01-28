@@ -62,15 +62,15 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
                         ?short, ?long, ?dummy, ?descrColor ) =
   let defaultCB opts (_args:Args) = opts
 
-  member this.descr : string = descr
-  member this.descrColor : ConsoleColor option = descrColor
-  member this.callback : ('a -> Args -> 'a) = defaultArg callback defaultCB
-  member this.required : bool = defaultArg required false
-  member this.extra : int = defaultArg extra 0 |> sanitizeExtra
-  member this.help: bool = defaultArg help false
-  member this.short : string = defaultArg short "" |> sanitizeShort
-  member this.long : string = defaultArg long "" |> sanitizeLong
-  member this.dummy : bool = defaultArg dummy false
+  member __.descr : string = descr
+  member __.descrColor : ConsoleColor option = descrColor
+  member __.callback : ('a -> Args -> 'a) = defaultArg callback defaultCB
+  member __.required : bool = defaultArg required false
+  member __.extra : int = defaultArg extra 0 |> sanitizeExtra
+  member __.help: bool = defaultArg help false
+  member __.short : string = defaultArg short "" |> sanitizeShort
+  member __.long : string = defaultArg long "" |> sanitizeLong
+  member __.dummy : bool = defaultArg dummy false
 
   interface IComparable<'a Option> with
     member this.CompareTo obj =
@@ -94,7 +94,7 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
   override this.GetHashCode () =
     hash (this.short, this.long)
 
-type 'a spec = 'a Option list
+type 'a Spec = 'a Option list
 
 let rec rep acc ch n =
   if n <= 0 then acc else rep (ch::acc) ch (n-1)
@@ -146,7 +146,7 @@ let clearColor = function
   | Some _ -> Console.ResetColor ()
 
 /// Show usage and exit.
-let usageExec prog usgForm (spec: 'a spec) maxwidth reqset beginFn termFn =
+let usageExec prog usgForm (spec: 'a Spec) maxwidth reqset beginFn termFn =
   let spaceFill (str: string) =
     let margin = 5
     let space = maxwidth - str.Length + margin
@@ -183,7 +183,7 @@ let setUpdate (opt: string) optset =
   else
     optset
 
-let checkSpec (spec: 'a spec) =
+let checkSpec (spec: 'a Spec) =
   let _optset =
     List.fold (fun optset (opt: 'a Option) ->
       if opt.dummy then
@@ -195,7 +195,7 @@ let checkSpec (spec: 'a spec) =
   in
   spec
 
-let getSpecInfo (spec: 'a spec) =
+let getSpecInfo (spec: 'a Spec) =
   List.fold (fun (width, (reqset: Set<'a Option>)) (optarg: 'a Option) ->
     let w =
       let opt = fullOptStr optarg
@@ -207,7 +207,7 @@ let getSpecInfo (spec: 'a spec) =
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
 
-let rec parse left (spec: 'a spec) (args: Args) reqset usage state =
+let rec parse left (spec: 'a Spec) (args: Args) reqset usage state =
   if args.Length <= 0 then
     if Set.isEmpty reqset then List.rev left, state
     else rterr "Required arguments not provided"

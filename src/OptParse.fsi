@@ -55,12 +55,12 @@ type 'a Option =
   end
 
 /// The specification of command line options.
-type 'a spec = 'a Option list
+type 'a Spec = 'a Option list
 
 /// Parse command line arguments and return a list of unmatched arguments.
 val optParse:
      // Command line specification
-     'a spec
+     'a Spec
      // Usage form specifies a command line usage string. There are two format
      // specifiers: %p for a program name, and %o for options.
   -> usageForm: string
@@ -75,7 +75,7 @@ val optParse:
 
 /// Print the usage message.
 val usagePrint:
-     'a spec
+     'a Spec
   -> prog: string
   -> usageForm: string
      // A callback function called at the beginning of usagePrint
