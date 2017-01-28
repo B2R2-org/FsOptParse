@@ -1,3 +1,6 @@
+### New in 0.4.4 (Released 01/28/2017)
+* Allow short options to have extra arguments without a space char
+
 ### New in 0.4.3 (Released 01/28/2017)
 * Minor changes
 
