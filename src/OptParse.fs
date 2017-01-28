@@ -62,19 +62,19 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
                         ?short, ?long, ?dummy, ?descrColor ) =
   let cbDefault opts (_args:Args) = opts
 
-  member __.descr : string = descr
-  member __.descrColor : ConsoleColor option = descrColor
-  member __.callback : ('a -> Args -> 'a) = defaultArg callback cbDefault
-  member __.required : bool = defaultArg required false
-  member __.extra : int = defaultArg extra 0 |> sanitizeExtra
-  member __.help: bool = defaultArg help false
-  member __.short : string = defaultArg short "" |> sanitizeShort
-  member __.long : string = defaultArg long "" |> sanitizeLong
-  member __.dummy : bool = defaultArg dummy false
+  member __.Descr : string = descr
+  member __.DescrColor : ConsoleColor option = descrColor
+  member __.Callback : ('a -> Args -> 'a) = defaultArg callback cbDefault
+  member __.Required : bool = defaultArg required false
+  member __.Extra : int = defaultArg extra 0 |> sanitizeExtra
+  member __.Help: bool = defaultArg help false
+  member __.Short : string = defaultArg short "" |> sanitizeShort
+  member __.Long : string = defaultArg long "" |> sanitizeLong
+  member __.Dummy : bool = defaultArg dummy false
 
   interface IComparable<'a Option> with
     member this.CompareTo obj =
-      compare (this.short, this.long) (obj.short, obj.long)
+      compare (this.Short, this.Long) (obj.Short, obj.Long)
 
   interface IComparable with
     member this.CompareTo obj =
@@ -84,7 +84,7 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
 
   interface IEquatable<'a Option> with
     member this.Equals obj =
-      this.short = obj.short && this.long = obj.long
+      this.Short = obj.Short && this.Long = obj.Long
 
   override this.Equals obj =
     match obj with
@@ -92,7 +92,7 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
       | _ -> specErr "Not an option"
 
   override this.GetHashCode () =
-    hash (this.short, this.long)
+    hash (this.Short, this.Long)
 
 type 'a Spec = 'a Option list
 
@@ -115,20 +115,20 @@ let optStringCheck short long =
   if short = "" && long = "" then specErr "Optstring not given" else short, long
 
 let fullOptStr (opt: 'a Option) =
-  let l = opt.long.Length
-  let s = opt.short.Length
+  let l = opt.Long.Length
+  let s = opt.Short.Length
   if l > 0 && s > 0 then
-    opt.short + "," + opt.long + (extraString opt.extra opt.descr)
-  elif l > 0 then opt.long + (extraString opt.extra opt.descr)
-  else opt.short + (extraString opt.extra opt.descr)
+    opt.Short + "," + opt.Long + (extraString opt.Extra opt.Descr)
+  elif l > 0 then opt.Long + (extraString opt.Extra opt.Descr)
+  else opt.Short + (extraString opt.Extra opt.Descr)
 
 let reqOpts reqset =
   Set.fold (fun (sb: System.Text.StringBuilder) (reqopt: 'a Option) ->
-    let short, long = optStringCheck reqopt.short reqopt.long
+    let short, long = optStringCheck reqopt.Short reqopt.Long
     if short.Length = 0 then
-      sprintf "%s%s " long (extraString reqopt.extra reqopt.descr) |> sb.Append
+      sprintf "%s%s " long (extraString reqopt.Extra reqopt.Descr) |> sb.Append
     else
-      sprintf "%s%s " short (extraString reqopt.extra reqopt.descr) |> sb.Append
+      sprintf "%s%s " short (extraString reqopt.Extra reqopt.Descr) |> sb.Append
   ) (new System.Text.StringBuilder ()) reqset
   |> (fun sb -> let sb = sb.Append "[opts...]" in (sb.ToString ()).Trim())
 
@@ -156,14 +156,14 @@ let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset termFn =
   Console.Write "\n\n"
   (* printing a list of options *)
   List.iter (fun (opt: 'a Option) ->
-    setColor opt.descrColor
-    if opt.dummy then
-      sprintf "%s\n" opt.descr |> Console.Write
+    setColor opt.DescrColor
+    if opt.Dummy then
+      sprintf "%s\n" opt.Descr |> Console.Write
     else
-      let _short, _long = optStringCheck opt.short opt.long
+      let _short, _long = optStringCheck opt.Short opt.Long
       let optstr = fullOptStr opt
-      sprintf "%s%s: %s\n" optstr (spaceFill optstr) opt.descr |> Console.Write
-    clearColor opt.descrColor
+      sprintf "%s%s: %s\n" optstr (spaceFill optstr) opt.Descr |> Console.Write
+    clearColor opt.DescrColor
   ) spec
   "\n" |> Console.Write
   termFn ()
@@ -178,11 +178,9 @@ let setUpdate (opt: string) optset =
 let checkSpec (spec: 'a Spec) =
   let _optset =
     List.fold (fun optset (opt: 'a Option) ->
-      if opt.dummy then
-        optset
-      else
-        let short, long = optStringCheck opt.short opt.long
-        setUpdate short optset |> setUpdate long
+      if opt.Dummy then optset
+      else let short, long = optStringCheck opt.Short opt.Long
+           setUpdate short optset |> setUpdate long
     ) Set.empty<string> spec
   in
   spec
@@ -194,7 +192,7 @@ let getSpecInfo (spec: 'a Spec) =
       let newwidth = opt.Length
       if newwidth > width then newwidth else width
     let r =
-      if optarg.required && not optarg.dummy then Set.add optarg reqset
+      if optarg.Required && not optarg.Dummy then Set.add optarg reqset
       else reqset
     w, r
   ) (0, Set.empty) spec (* maxwidth, required opts *)
@@ -211,14 +209,14 @@ and specLoop args reqset left usage state = function
       args.[1..], (args.[0] :: left), reqset, state
   | (optarg: 'a Option)::rest ->
       let m, args, reqset, state =
-        if optarg.dummy then false, args, reqset, state
+        if optarg.Dummy then false, args, reqset, state
         else argMatch optarg args reqset usage state
       if m then args, left, reqset, state
       else specLoop args reqset left usage state rest
 and argMatch (optarg: 'a Option) args reqset usage state =
   let argNoMatch = (false, args, reqset, state)
-  let s, l = optStringCheck optarg.short optarg.long
-  let extra = optarg.extra
+  let s, l = optStringCheck optarg.Short optarg.Long
+  let extra = optarg.Extra
   if s = args.[0] || l = args.[0] then
     argMatchRet optarg args reqset extra usage state
   elif String.length s > 0 && args.[0].StartsWith(s) && extra > 0 then
@@ -236,10 +234,10 @@ and argMatch (optarg: 'a Option) args reqset usage state =
 and argMatchRet (optarg: 'a Option) args reqset extra usage state =
   if (args.Length - extra) < 1 then
     rtErr (sprintf "Extra arg not given for %s" args.[0])
-  elif optarg.help then usage (); exit 0
+  elif optarg.Help then usage (); exit 0
   else
     let state': 'a =
-      try optarg.callback state args.[1..extra]
+      try optarg.Callback state args.[1..extra]
       with e -> (eprintfn "Callback failure for %s" args.[0]); rtErr e.Message
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
