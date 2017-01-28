@@ -1,5 +1,5 @@
 ### New in 0.4.3 (Released 01/28/2017)
-* Minor bug fix
+* Minor changes
 
 ### New in 0.4.2 (Released 01/28/2017)
 * Removed unnecessary callback functions
