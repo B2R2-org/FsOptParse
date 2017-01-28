@@ -60,11 +60,11 @@ let sanitizeLong (opt: string) =
 
 type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
                         ?short, ?long, ?dummy, ?descrColor ) =
-  let defaultCB opts (_args:Args) = opts
+  let cbDefault opts (_args:Args) = opts
 
   member __.descr : string = descr
   member __.descrColor : ConsoleColor option = descrColor
-  member __.callback : ('a -> Args -> 'a) = defaultArg callback defaultCB
+  member __.callback : ('a -> Args -> 'a) = defaultArg callback cbDefault
   member __.required : bool = defaultArg required false
   member __.extra : int = defaultArg extra 0 |> sanitizeExtra
   member __.help: bool = defaultArg help false
@@ -122,10 +122,8 @@ let fullOptStr (opt: 'a Option) =
   let s = opt.short.Length
   if l > 0 && s > 0 then
     opt.short + "," + opt.long + (extraString opt.extra opt.descr)
-  else if l > 0 then
-    opt.long + (extraString opt.extra opt.descr)
-  else
-    opt.short + (extraString opt.extra opt.descr)
+  elif l > 0 then opt.long + (extraString opt.extra opt.descr)
+  else opt.short + (extraString opt.extra opt.descr)
 
 let reqOpts reqset =
   Set.fold (fun (sb: System.Text.StringBuilder) (reqopt: 'a Option) ->
@@ -228,20 +226,22 @@ and argMatch (optarg: 'a Option) args reqset usage state =
   let extra = optarg.extra
   if s = args.[0] || l = args.[0] then
     argMatchRet optarg args reqset extra usage state
-  else if args.[0].Contains("=") then
+  elif String.length s > 0 && args.[0].StartsWith(s) && extra > 0 then
+    (* Short options can have extra argument without having a space char. *)
+    let splittedArg = [| args.[0].[0..1]; args.[0].[2..] |]
+    let args = Array.concat [splittedArg; args.[1..]]
+    argMatchRet optarg args reqset extra usage state
+  elif args.[0].Contains("=") then
     let splittedArg = args.[0].Split([|'='|], 2)
     if s = splittedArg.[0] || l = splittedArg.[0] then
       let args = Array.concat [splittedArg; args.[1..]]
       argMatchRet optarg args reqset extra usage state
-    else
-      argNoMatch
-  else
-    argNoMatch
+    else argNoMatch
+  else argNoMatch
 and argMatchRet (optarg: 'a Option) args reqset extra usage state =
   if (args.Length - extra) < 1 then
     rterr (sprintf "Extra arg not given for %s" args.[0])
-  else if optarg.help then
-    usage (); exit 0
+  elif optarg.help then usage (); exit 0
   else
     let state': 'a =
       try optarg.callback state args.[1..extra]
