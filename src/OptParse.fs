@@ -32,13 +32,13 @@ open System.Text.RegularExpressions
 exception SpecErr of string
 exception RuntimeErr of string
 
-let specerr msg = raise (SpecErr msg)
-let rterr msg = raise (RuntimeErr msg)
+let specErr msg = raise (SpecErr msg)
+let rtErr msg = raise (RuntimeErr msg)
 
 type Args = string array
 
 let sanitizeExtra (n: int) =
-  if n < 0 then specerr "Extra field should be positive"
+  if n < 0 then specErr "Extra field should be positive"
   else n
 
 let rec removeDashes (s: string) =
@@ -49,14 +49,14 @@ let sanitizeShort (opt: string) =
   else
     let opt = removeDashes opt
     if opt.Length = 1 then "-" + opt
-    else specerr (sprintf "Invalid short option %s is given" opt)
+    else specErr (sprintf "Invalid short option %s is given" opt)
 
 let sanitizeLong (opt: string) =
   if opt.Length = 0 then opt
   else
     let opt = "--" + (removeDashes opt)
     if opt.Length > 2 then opt
-    else specerr (sprintf "Invalid long option %s is given" opt)
+    else specErr (sprintf "Invalid long option %s is given" opt)
 
 type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
                         ?short, ?long, ?dummy, ?descrColor ) =
@@ -80,7 +80,7 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
     member this.CompareTo obj =
       match obj with
         | :? ('a Option) as obj -> (this :> IComparable<_>).CompareTo obj
-        | _ -> specerr "Not an option"
+        | _ -> specErr "Not an option"
 
   interface IEquatable<'a Option> with
     member this.Equals obj =
@@ -89,15 +89,14 @@ type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
   override this.Equals obj =
     match obj with
       | :? ('a Option) as obj -> (this :> IEquatable<_>).Equals obj
-      | _ -> specerr "Not an option"
+      | _ -> specErr "Not an option"
 
   override this.GetHashCode () =
     hash (this.short, this.long)
 
 type 'a Spec = 'a Option list
 
-let rec rep acc ch n =
-  if n <= 0 then acc else rep (ch::acc) ch (n-1)
+let rec rep acc ch n = if n <= 0 then acc else rep (ch::acc) ch (n-1)
 
 let getExtra extraCnt descr =
   let pattern = @"<([a-zA-Z0-9]+)>"
@@ -110,12 +109,10 @@ let getExtra extraCnt descr =
     " <OPT>"
 
 let extraString extraCnt descr =
-  if extraCnt > 0 then getExtra extraCnt descr
-  else ""
+  if extraCnt > 0 then getExtra extraCnt descr else ""
 
 let optStringCheck short long =
-  if short = "" && long = "" then specerr "Optstring not given"
-  else short, long
+  if short = "" && long = "" then specErr "Optstring not given" else short, long
 
 let fullOptStr (opt: 'a Option) =
   let l = opt.long.Length
@@ -174,11 +171,9 @@ let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset termFn =
 let setUpdate (opt: string) optset =
   if opt.Length > 0 then
     if Set.exists (fun s -> s = opt) optset then
-      specerr (sprintf "Duplicated opt: %s" opt)
-    else
-      Set.add opt optset
-  else
-    optset
+      specErr (sprintf "Duplicated opt: %s" opt)
+    else Set.add opt optset
+  else optset
 
 let checkSpec (spec: 'a Spec) =
   let _optset =
@@ -207,7 +202,7 @@ let getSpecInfo (spec: 'a Spec) =
 let rec parse left (spec: 'a Spec) (args: Args) reqset usage state =
   if args.Length <= 0 then
     if Set.isEmpty reqset then List.rev left, state
-    else rterr "Required arguments not provided"
+    else rtErr "Required arguments not provided"
   else
     let args, left, reqset, state = specLoop args reqset left usage state spec
     parse left spec args reqset usage state
@@ -240,19 +235,19 @@ and argMatch (optarg: 'a Option) args reqset usage state =
   else argNoMatch
 and argMatchRet (optarg: 'a Option) args reqset extra usage state =
   if (args.Length - extra) < 1 then
-    rterr (sprintf "Extra arg not given for %s" args.[0])
+    rtErr (sprintf "Extra arg not given for %s" args.[0])
   elif optarg.help then usage (); exit 0
   else
     let state': 'a =
       try optarg.callback state args.[1..extra]
-      with e -> (eprintfn "Callback failure for %s" args.[0]); rterr e.Message
+      with e -> (eprintfn "Callback failure for %s" args.[0]); rtErr e.Message
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
 /// Parse command line arguments and return a list of unmatched arguments.
 let optParse spec usageGetter prog (args: Args) state =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
   let usage () = usageExec prog usageGetter spec maxwidth reqset ignore
-  if args.Length < 0 then usage (); rterr "No argument given"
+  if args.Length < 0 then usage (); rtErr "No argument given"
   else parse [] spec args reqset usage state
 
 let usagePrint spec prog usageGetter termFn =
