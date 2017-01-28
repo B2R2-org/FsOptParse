@@ -146,17 +146,16 @@ let clearColor = function
   | Some _ -> Console.ResetColor ()
 
 /// Show usage and exit.
-let usageExec prog usgForm (spec: 'a Spec) maxwidth reqset beginFn termFn =
+let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset =
   let spaceFill (str: string) =
     let margin = 5
     let space = maxwidth - str.Length + margin
     String.concat "" (rep [] " " space)
   (* printing a simple usage *)
+  let usgForm = usgGetter ()
   let usgForm = if String.length usgForm = 0 then "Usage: %p %o" else usgForm
   let usgForm = usgForm.Replace ("%p", prog)
   let usgForm = usgForm.Replace ("%o", reqOpts reqset)
-  (* Start *)
-  beginFn ()
   (* required option must be presented in the usage *)
   Console.Write usgForm
   Console.Write "\n\n"
@@ -172,7 +171,6 @@ let usageExec prog usgForm (spec: 'a Spec) maxwidth reqset beginFn termFn =
     clearColor opt.descrColor
   ) spec
   "\n" |> Console.Write
-  termFn ()
 
 let setUpdate (opt: string) optset =
   if opt.Length > 0 then
@@ -250,15 +248,14 @@ and argMatchRet (optarg: 'a Option) args reqset extra usage state =
     (true, args.[(1+extra)..], Set.remove optarg reqset, state')
 
 /// Parse command line arguments and return a list of unmatched arguments.
-let optParse spec usageForm prog (args: Args) state =
-  let noArgs () = ()
+let optParse spec usageGetter prog (args: Args) state =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  let usage () = usageExec prog usageForm spec maxwidth reqset noArgs noArgs
+  let usage () = usageExec prog usageGetter spec maxwidth reqset
   if args.Length < 0 then usage (); rterr "No argument given"
   else parse [] spec args reqset usage state
 
-let usagePrint spec prog usageForm beginFn termFn =
+let usagePrint spec prog usageGetter =
   let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  usageExec prog usageForm spec maxwidth reqset beginFn termFn
+  usageExec prog usageGetter spec maxwidth reqset
 
 // vim: set tw=80 sts=2 sw=2:

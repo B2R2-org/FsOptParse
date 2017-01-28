@@ -59,29 +59,26 @@ type 'a Spec = 'a Option list
 
 /// Parse command line arguments and return a list of unmatched arguments.
 val optParse:
-     // Command line specification
+     /// Command line specification
      'a Spec
-     // Usage form specifies a command line usage string. There are two format
-     // specifiers: %p for a program name, and %o for options.
-  -> usageForm: string
-     // Program
+     /// The usage getter is a delayed call-back function that returns a usage
+     /// string. The returned string can have two format specifiers: %p for a
+     /// program name, and %o for options.
+  -> usageGetter: (unit -> string)
+     /// Program
   -> prog: string
-     // Command line args
+     /// Command line args.
   -> Args
-     // Data storing the initial option values
+     /// Data storing the initial option values
   -> 'a
-     // Returns a list of unmatched (non-option) args and the final option data
+     /// Returns a list of unmatched (non-option) args and the final option data
   -> string list * 'a
 
 /// Print the usage message.
 val usagePrint:
      'a Spec
   -> prog: string
-  -> usageForm: string
-     // A callback function called at the beginning of usagePrint
-  -> beginFn: (unit -> unit)
-     // A callback function called at the end of usagePrint
-  -> termFn: (unit -> 'b)
-  -> 'b
+  -> usageGetter: (unit -> string)
+  -> unit
 
 // vim: set tw=80 sts=2 sw=2:
