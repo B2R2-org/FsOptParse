@@ -1,3 +1,6 @@
+### New in 0.4.6 (Released 02/28/2018)
+* Support .NET Core
+
 ### New in 0.4.5 (Released 01/28/2017)
 * Allow short options to have extra arguments without a space char
 * Removed unnecessary callback functions

@@ -16,7 +16,7 @@ usage based on a given specification, and terminates the program.
 
 Build
 -----
-OptParse uses FAKE for building. Simply type `make` in a terminal.
+OptParse relies on .NET Core. Simply type `dotnet build` in a terminal.
 
 Package
 -------
