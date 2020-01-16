@@ -1,5 +1,5 @@
 (*
-  Optparse - FSharp-based Command Line Argument Parsing
+  B2R2.FsOptParse - FSharp-based Command Line Argument Parsing
 
   Author: Sang Kil Cha <sangkil.cha@gmail.com>
 
@@ -24,8 +24,8 @@
   THE SOFTWARE.
 *)
 
-#load "optparse.fs"
-open OptParse
+#load "FsOptParse.fs"
+open B2R2.FsOptParse
 
 (** defines a state to pass to the option parser *)
 type opts =

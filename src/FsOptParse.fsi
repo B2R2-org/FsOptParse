@@ -1,5 +1,5 @@
 (*
-  Optparse - FSharp-based Command Line Argument Parsing
+  B2R2.FsOptParse - FSharp-based Command Line Argument Parsing
 
   Author: Sang Kil Cha <sangkil.cha@gmail.com>
 
@@ -24,7 +24,7 @@
   THE SOFTWARE.
 *)
 
-module OptParse
+module B2R2.FsOptParse
 
 /// Invalid spec definition is found.
 exception SpecErr of string

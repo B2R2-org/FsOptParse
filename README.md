@@ -1,37 +1,37 @@
-OptParse: An F# Command Line Parsing Library
+B2R2.FsOptParse: An F# Command Line Parsing Library
 ===============================================
 
-OptParse library (OptParse.dll) implements command-line parsing APIs that are
-succinct and clean. It is completely written in a single F# file (fs). It is
-very intuitive to use, and also provides lots of convenient command-line parsing
-features.
+B2R2.FsOptParse library (B2R2.FsOptParse.dll) implements command-line parsing
+APIs that are succinct and clean. It is completely written in a single F# file
+(fs). It is very intuitive to use, and also provides lots of convenient
+command-line parsing features.
 
-OptParse exposes just two functions including `optParse` and `usageExit`.  The
-`optParse` function takes in a specification of command line options, a program
-name, and a list of arguments from a user as input. It then parses the input
-arguments and calls corresponding callback functions registered through the
-specification as per interpreting each encountered option. Finally, it returns a
-list of unmatched arguments. The `usageExit` function prints out a well-formed
-usage based on a given specification, and terminates the program.
+B2R2.FsOptParse exposes just two functions including `optParse` and `usageExit`.
+The `optParse` function takes in a specification of command line options, a
+program name, and a list of arguments from a user as input. It then parses the
+input arguments and calls corresponding callback functions registered through
+the specification as per interpreting each encountered option. Finally, it
+returns a list of unmatched arguments. The `usageExit` function prints out a
+well-formed usage based on a given specification, and terminates the program.
 
 Build
 -----
-OptParse relies on .NET Core. Simply type `dotnet build` in a terminal.
+B2R2.FsOptParse relies on .NET Core. Simply type `dotnet build` in a terminal.
 
 Package
 -------
 Available in NuGet.
 
-[![NuGet Status](http://img.shields.io/nuget/v/OptParse.svg?style=flat)](https://www.nuget.org/packages/OptParse/)
+[![NuGet Status](http://img.shields.io/nuget/v/B2R2.FsOptParse.svg?style=flat)](https://www.nuget.org/packages/B2R2.FsOptParse/)
 
 Example
 -------
 
-The src/opttest.fsx file contains an example usage.
+The src/OptTest.fsx file contains an example usage.
 
 
 ```fsharp
-open OptParse
+open B2R2.FsOptParse
 
 (** defines a state to pass to the option parser *)
 type opts =

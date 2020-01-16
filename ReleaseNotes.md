@@ -1,3 +1,6 @@
+### New in 0.4.7 (Released 01/17/2020)
+* Change the official namespace and repository URL
+
 ### New in 0.4.6 (Released 02/28/2018)
 * Support .NET Core
 
