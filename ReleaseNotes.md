@@ -1,4 +1,9 @@
-### New in 0.4.7 (Released 01/17/2020)
+### New in 0.6.0 (Released 08/20/2025)
+* Clean up the codebase
+* Use .NET-style APIs
+* Support both netstandard2.1 and net9.0
+
+### New in 0.5.0 (Released 01/17/2020)
 * Change the official namespace and repository URL
 
 ### New in 0.4.6 (Released 02/28/2018)
