@@ -33,7 +33,7 @@ exception SpecErr of string
 exception RuntimeErr of string
 
 /// Command-line arguments.
-type Args = string array
+type Args = string[]
 
 /// A command line option.
 type 'a Option =
@@ -79,7 +79,7 @@ val usagePrint:
      'a Spec
   -> prog: string
   -> usageGetter: (unit -> string)
-   /// A callback function called at the end of usagePrint.
+     /// A callback function called at the end of usagePrint.
   -> termFn: (unit -> 'b)
   -> 'b
 

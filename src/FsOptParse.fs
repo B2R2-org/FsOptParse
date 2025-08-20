@@ -24,232 +24,315 @@
   THE SOFTWARE.
 *)
 
-module B2R2.FsOptParse
+namespace B2R2.FsOptParse
 
 open System
+open System.Collections.Generic
 open System.Text.RegularExpressions
 
-exception SpecErr of string
-exception RuntimeErr of string
+/// Invalid spec definition is found.
+exception SpecError of string
 
-let specErr msg = raise (SpecErr msg)
-let rtErr msg = raise (RuntimeErr msg)
+/// User's input does not follow the spec.
+exception RuntimeError of string
 
-type Args = string array
+/// Represents command-line arguments.
+type private Args = string[]
 
-let sanitizeExtra (n: int) =
-  if n < 0 then specErr "Extra field should be positive"
-  else n
+/// Represents a command-line option.
+type CmdOpt<'Ctx>(descr,
+                  ?callback,
+                  ?required,
+                  ?extra,
+                  ?help,
+                  ?short,
+                  ?long,
+                  ?dummy,
+                  ?descrColor) =
 
-let rec removeDashes (s: string) =
-  if s.[0] = '-' then removeDashes s.[1..] else s
+  let cbDefault ctx _args = ctx
 
-let sanitizeShort (opt: string) =
-  if opt.Length = 0 then opt
-  else
-    let opt = removeDashes opt
-    if opt.Length = 1 then "-" + opt
-    else specErr (sprintf "Invalid short option %s is given" opt)
+  let sanitizeExtra (n: int) =
+    if n < 0 then raise <| SpecError "Extra field should be positive"
+    else n
 
-let sanitizeLong (opt: string) =
-  if opt.Length = 0 then opt
-  else
-    let opt = "--" + (removeDashes opt)
-    if opt.Length > 2 then opt
-    else specErr (sprintf "Invalid long option %s is given" opt)
+  let rec removeDashes (s: string) =
+    if s.[0] = '-' then removeDashes s.[1..] else s
 
-type 'a Option ( descr, ?callback, ?required, ?extra, ?help,
-                        ?short, ?long, ?dummy, ?descrColor ) =
-  let cbDefault opts (_args:Args) = opts
+  let sanitizeShort (opt: string) =
+    if opt.Length = 0 then opt
+    else
+      let opt = removeDashes opt
+      if opt.Length = 1 then "-" + opt
+      else raise <| SpecError $"Invalid short option {opt} is given"
 
-  member __.Descr : string = descr
-  member __.DescrColor : ConsoleColor option = descrColor
-  member __.Callback : ('a -> Args -> 'a) = defaultArg callback cbDefault
-  member __.Required : bool = defaultArg required false
-  member __.Extra : int = defaultArg extra 0 |> sanitizeExtra
-  member __.Help: bool = defaultArg help false
-  member __.Short : string = defaultArg short "" |> sanitizeShort
-  member __.Long : string = defaultArg long "" |> sanitizeLong
-  member __.Dummy : bool = defaultArg dummy false
+  let sanitizeLong (opt: string) =
+    if opt.Length = 0 then opt
+    else
+      let opt = "--" + (removeDashes opt)
+      if opt.Length > 2 then opt
+      else raise <| SpecError $"Invalid long option {opt} is given"
 
-  interface IComparable<'a Option> with
+  /// Description of the option.
+  member _.Descr with get(): string = descr
+
+  /// Color of the description when printing the usage.
+  member _.DescrColor with get(): ConsoleColor option = descrColor
+
+  /// Callback function to be called when the option is matched.
+  member _.Callback with get(): 'Ctx -> Args -> 'Ctx =
+    defaultArg callback cbDefault
+
+  /// Whether the option is required.
+  member _.Required with get(): bool = defaultArg required false
+
+  /// Number of extra arguments that the option can take.
+  member _.Extra with get(): int = defaultArg extra 0 |> sanitizeExtra
+
+  /// Whether the option should print the usage message.
+  member _.Help with get(): bool = defaultArg help false
+
+  /// Short option string.
+  member _.Short with get(): string = defaultArg short "" |> sanitizeShort
+
+  /// Long option string.
+  member _.Long with get(): string = defaultArg long "" |> sanitizeLong
+
+  /// Whether the option is a dummy option (not a real option) for usage
+  /// printing.
+  member _.Dummy with get(): bool = defaultArg dummy false
+
+  interface IComparable<CmdOpt<'Ctx>> with
     member this.CompareTo obj =
       compare (this.Short, this.Long) (obj.Short, obj.Long)
 
   interface IComparable with
     member this.CompareTo obj =
       match obj with
-        | :? ('a Option) as obj -> (this :> IComparable<_>).CompareTo obj
-        | _ -> specErr "Not an option"
+      | :? CmdOpt<'Ctx> as obj -> (this :> IComparable<_>).CompareTo obj
+      | _ -> raise <| SpecError "Not an option"
 
-  interface IEquatable<'a Option> with
+  interface IEquatable<CmdOpt<'Ctx>> with
     member this.Equals obj =
       this.Short = obj.Short && this.Long = obj.Long
 
   override this.Equals obj =
     match obj with
-      | :? ('a Option) as obj -> (this :> IEquatable<_>).Equals obj
-      | _ -> specErr "Not an option"
+    | :? CmdOpt<'Ctx> as obj -> (this :> IEquatable<_>).Equals obj
+    | _ -> raise <| SpecError "Not an option"
 
-  override this.GetHashCode () =
+  override this.GetHashCode() =
     hash (this.Short, this.Long)
 
-type 'a Spec = 'a Option list
+[<AutoOpen>]
+module private CmdOpt =
 
-let rec rep acc ch n = if n <= 0 then acc else rep (ch::acc) ch (n-1)
+  let [<Literal>] ExtraArgPattern = @"<([a-zA-Z0-9]+)>"
 
-let getExtra extraCnt descr =
-  let pattern = @"<([a-zA-Z0-9]+)>"
-  let m = Regex.Matches(descr, pattern)
-  if m.Count > 0 && m.Count <= extraCnt then
-    Seq.fold (fun (acc:string) (m:Match) ->
-      acc + " <" + m.Groups.[1].Value + ">"
-    ) "" (Seq.cast m)
-  else
-    " <OPT>"
+  let extractExtraArgStringFromDesc extraCnt descr =
+    let ms = Regex.Matches(descr, ExtraArgPattern)
+    if ms.Count > 0 && ms.Count <= extraCnt then
+      let sb = Text.StringBuilder()
+      for m in ms do sb.Append(" <" + m.Groups[1].Value + ">") |> ignore
+      sb.ToString()
+    else (* cannot extract information from the descr, so just show this. *)
+      " <OPT>"
 
-let extraString extraCnt descr =
-  if extraCnt > 0 then getExtra extraCnt descr else ""
+  let getExtraArgString extraCnt descr =
+    if extraCnt > 0 then extractExtraArgStringFromDesc extraCnt descr
+    else ""
 
-let optStringCheck short long =
-  if short = "" && long = "" then specErr "Optstring not given" else short, long
+  let getOptSummary reqSet =
+    let sb = Text.StringBuilder()
+    for (reqopt: CmdOpt<_>) in reqSet do
+      let short, long = reqopt.Short, reqopt.Long
+      if short.Length = 0 then
+        sb.Append $"{long}{getExtraArgString reqopt.Extra reqopt.Descr} "
+        |> ignore
+      else
+        sb.Append $"{short}{getExtraArgString reqopt.Extra reqopt.Descr} "
+        |> ignore
+    sb.Append("[opts...]").ToString().Trim()
 
-let fullOptStr (opt: 'a Option) =
-  let l = opt.Long.Length
-  let s = opt.Short.Length
-  if l > 0 && s > 0 then
-    opt.Short + "," + opt.Long + (extraString opt.Extra opt.Descr)
-  elif l > 0 then opt.Long + (extraString opt.Extra opt.Descr)
-  else opt.Short + (extraString opt.Extra opt.Descr)
+  /// Print a single-line (simple) usage.
+  let printSimpleUsage prog usageFormatGetter reqSet =
+    let usgForm = usageFormatGetter ()
+    let usgForm = if String.length usgForm = 0 then "Usage: %p %o" else usgForm
+    let usgForm = usgForm.Replace("%p", prog)
+    let usgForm = usgForm.Replace("%o", getOptSummary reqSet)
+    Console.Write usgForm
+    Console.WriteLine Environment.NewLine
 
-let reqOpts reqset =
-  Set.fold (fun (sb: System.Text.StringBuilder) (reqopt: 'a Option) ->
-    let short, long = optStringCheck reqopt.Short reqopt.Long
-    if short.Length = 0 then
-      sprintf "%s%s " long (extraString reqopt.Extra reqopt.Descr) |> sb.Append
+  let setColor = function
+    | None -> ()
+    | Some color -> Console.ForegroundColor <- color
+
+  let clearColor = function
+    | None -> ()
+    | Some _ -> Console.ResetColor()
+
+  let getOptUsageString (opt: CmdOpt<_>) =
+    let long = opt.Long
+    let short = opt.Short
+    if long.Length > 0 && short.Length > 0 then
+      $"{short}, {long}{getExtraArgString opt.Extra opt.Descr}"
+    elif long.Length > 0 then
+      long + (getExtraArgString opt.Extra opt.Descr)
     else
-      sprintf "%s%s " short (extraString reqopt.Extra reqopt.Descr) |> sb.Append
-  ) (new System.Text.StringBuilder ()) reqset
-  |> (fun sb -> let sb = sb.Append "[opts...]" in (sb.ToString ()).Trim())
+      short + (getExtraArgString opt.Extra opt.Descr)
 
-let setColor = function
-  | None -> ()
-  | Some color -> Console.ForegroundColor <- color
+  let [<Literal>] Margin = 5
 
-let clearColor = function
-  | None -> ()
-  | Some _ -> Console.ResetColor ()
+  let rec rep acc ch n =
+    if n <= 0 then acc
+    else rep (ch :: acc) ch (n - 1)
 
-/// Show usage and exit.
-let usageExec prog usgGetter (spec: 'a Spec) maxwidth reqset termFn =
-  let spaceFill (str: string) =
-    let margin = 5
-    let space = maxwidth - str.Length + margin
+  let fillSpace maxWidth (str: string) =
+    let space = maxWidth - str.Length + Margin
     String.concat "" (rep [] " " space)
-  (* printing a simple usage *)
-  let usgForm = usgGetter ()
-  let usgForm = if String.length usgForm = 0 then "Usage: %p %o" else usgForm
-  let usgForm = usgForm.Replace ("%p", prog)
-  let usgForm = usgForm.Replace ("%o", reqOpts reqset)
-  (* required option must be presented in the usage *)
-  Console.Write usgForm
-  Console.Write "\n\n"
-  (* printing a list of options *)
-  List.iter (fun (opt: 'a Option) ->
-    setColor opt.DescrColor
-    if opt.Dummy then
-      sprintf "%s\n" opt.Descr |> Console.Write
+
+  let printFullUsage spec maxWidth termFn =
+    for (opt: CmdOpt<_>) in spec do
+      setColor opt.DescrColor
+      if opt.Dummy then
+        Console.WriteLine opt.Descr
+      else
+        let optstr = getOptUsageString opt
+        $"{optstr}{fillSpace maxWidth optstr}: {opt.Descr}"
+        |> Console.WriteLine
+      clearColor opt.DescrColor
+    Console.WriteLine()
+    termFn ()
+
+  /// Show usage and exit.
+  let showUsage prog usageFormatGetter spec maxWidth reqSet termFn =
+    printSimpleUsage prog usageFormatGetter reqSet
+    printFullUsage spec maxWidth termFn
+
+  let updateOptSet (opt: string) (optSet: HashSet<string>) =
+    if opt.Length > 0 then
+      if optSet.Contains opt then raise <| SpecError $"Duplicate opt: {opt}"
+      else optSet.Add opt |> ignore
     else
-      let _short, _long = optStringCheck opt.Short opt.Long
-      let optstr = fullOptStr opt
-      sprintf "%s%s: %s\n" optstr (spaceFill optstr) opt.Descr |> Console.Write
-    clearColor opt.DescrColor
-  ) spec
-  "\n" |> Console.Write
-  termFn ()
+      ()
 
-let setUpdate (opt: string) optset =
-  if opt.Length > 0 then
-    if Set.exists (fun s -> s = opt) optset then
-      specErr (sprintf "Duplicated opt: %s" opt)
-    else Set.add opt optset
-  else optset
+  let inline assertOptStringExistence short long =
+    if String.IsNullOrEmpty short && String.IsNullOrEmpty long then
+      raise <| SpecError "Optstring not given"
+    else
+      ()
 
-let checkSpec (spec: 'a Spec) =
-  let _optset =
-    List.fold (fun optset (opt: 'a Option) ->
-      if opt.Dummy then optset
-      else let short, long = optStringCheck opt.Short opt.Long
-           setUpdate short optset |> setUpdate long
-    ) Set.empty<string> spec
-  in
-  spec
+  let checkSpec spec =
+    let optSet = HashSet<string>()
+    for opt: CmdOpt<_> in spec do
+      if opt.Dummy then
+        ()
+      else
+        let short, long = opt.Short, opt.Long
+        assertOptStringExistence short long
+        updateOptSet short optSet
+        updateOptSet long optSet
 
-let getSpecInfo (spec: 'a Spec) =
-  List.fold (fun (width, (reqset: Set<'a Option>)) (optarg: 'a Option) ->
-    let w =
-      let opt = fullOptStr optarg
-      let newwidth = opt.Length
-      if newwidth > width then newwidth else width
-    let r =
-      if optarg.Required && not optarg.Dummy then Set.add optarg reqset
-      else reqset
-    w, r
-  ) (0, Set.empty) spec (* maxwidth, required opts *)
+  let computeMaxWidthAndRequiredOptSet spec =
+    List.fold (fun (maxWidth, reqSet) opt ->
+      let maxWidth =
+        let optLen = getOptUsageString opt |> String.length
+        if optLen > maxWidth then optLen else maxWidth
+      let reqSet =
+        if opt.Required && not opt.Dummy then Set.add opt reqSet
+        else reqSet
+      maxWidth, reqSet
+    ) (0, Set.empty) spec
 
-let rec parse left (spec: 'a Spec) (args: Args) reqset usage state =
-  if args.Length <= 0 then
-    if Set.isEmpty reqset then List.rev left, state
-    else rtErr "Required arguments not provided"
-  else
-    let args, left, reqset, state = specLoop args reqset left usage state spec
-    parse left spec args reqset usage state
-and specLoop args reqset left usage state = function
-  | [] ->
-      args.[1..], (args.[0] :: left), reqset, state
-  | (optarg: 'a Option)::rest ->
-      let m, args, reqset, state =
-        if optarg.Dummy then false, args, reqset, state
-        else argMatch optarg args reqset usage state
-      if m then args, left, reqset, state
-      else specLoop args reqset left usage state rest
-and argMatch (optarg: 'a Option) args reqset usage state =
-  let argNoMatch = (false, args, reqset, state)
-  let s, l = optStringCheck optarg.Short optarg.Long
-  let extra = optarg.Extra
-  if s = args.[0] || l = args.[0] then
-    argMatchRet optarg args reqset extra usage state
-  elif String.length s > 0 && args.[0].StartsWith(s) && extra > 0 then
-    (* Short options can have extra argument without having a space char. *)
-    let splittedArg = [| args.[0].[0..1]; args.[0].[2..] |]
-    let args = Array.concat [splittedArg; args.[1..]]
-    argMatchRet optarg args reqset extra usage state
-  elif args.[0].Contains("=") then
-    let splittedArg = args.[0].Split([|'='|], 2)
-    if s = splittedArg.[0] || l = splittedArg.[0] then
-      let args = Array.concat [splittedArg; args.[1..]]
-      argMatchRet optarg args reqset extra usage state
-    else argNoMatch
-  else argNoMatch
-and argMatchRet (optarg: 'a Option) args reqset extra usage state =
-  if (args.Length - extra) < 1 then
-    rtErr (sprintf "Extra arg not given for %s" args.[0])
-  elif optarg.Help then usage (); exit 0
-  else
-    let state': 'a =
-      try optarg.Callback state args.[1..extra]
-      with e -> (eprintfn "Callback failure for %s" args.[0]); rtErr e.Message
-    (true, args.[(1+extra)..], Set.remove optarg reqset, state')
+  let rec parse left spec args reqSet usage state =
+    if Array.isEmpty args then
+      if Set.isEmpty reqSet then List.rev left, state
+      else raise <| RuntimeError "Required arguments not provided"
+    else
+      let args, left, reqSet, state = specLoop args reqSet left usage state spec
+      parse left spec args reqSet usage state
 
-/// Parse command line arguments and return a list of unmatched arguments.
-let optParse spec usageGetter prog (args: Args) state =
-  let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  let usage () = usageExec prog usageGetter spec maxwidth reqset ignore
-  if args.Length < 0 then usage (); rtErr "No argument given"
-  else parse [] spec args reqset usage state
+  and specLoop args reqSet left usage state = function
+    | [] ->
+      args[1..], (args[0] :: left), reqSet, state
+    | (opt: CmdOpt<_>) :: rest ->
+      let m, args, reqSet, state =
+        if opt.Dummy then false, args, reqSet, state
+        else argMatch opt args reqSet usage state
+      if m then args, left, reqSet, state
+      else specLoop args reqSet left usage state rest
 
-let usagePrint spec prog usageGetter termFn =
-  let maxwidth, reqset = checkSpec spec |> getSpecInfo
-  usageExec prog usageGetter spec maxwidth reqset termFn
+  and argMatch (opt: CmdOpt<_>) args reqSet usage state =
+    let argNoMatch = (false, args, reqSet, state)
+    let short, long = opt.Short, opt.Long
+    let extra = opt.Extra
+    if short = args[0] || long = args[0] then
+      argMatchRet opt args reqSet extra usage state
+    elif short.Length > 0 && args[0].StartsWith(short) && extra > 0 then
+      (* Short options can have extra argument without having a space char. *)
+      let splittedArg = [| args[0][0..1]; args[0][2..] |]
+      let args = Array.concat [ splittedArg; args[1..] ]
+      argMatchRet opt args reqSet extra usage state
+    elif args[0].Contains("=") then
+      let splittedArg = args[0].Split([| '=' |], 2)
+      if short = splittedArg.[0] || long = splittedArg.[0] then
+        let args = Array.concat [ splittedArg; args[1..] ]
+        argMatchRet opt args reqSet extra usage state
+      else
+        argNoMatch
+    else
+      argNoMatch
 
-// vim: set tw=80 sts=2 sw=2:
+  and argMatchRet opt args reqSet extra usage state =
+    if (args.Length - extra) < 1 then
+      raise <| RuntimeError $"Extra arg not given for {args[0]}"
+    elif opt.Help then
+      usage ()
+      exit 0
+    else
+      let state' =
+        try
+          opt.Callback state args[1..extra]
+        with e ->
+          Console.Error.WriteLine $"Callback failure for {args[0]}"
+          raise <| RuntimeError e.Message
+      (true, args[(1 + extra)..], Set.remove opt reqSet, state')
+
+/// Represents the command-line option parser.
+type OptParse =
+
+  /// <summary>
+  /// Parses command-line arguments and returns a list of unmatched arguments.
+  /// </summary>
+  static member Parse(spec, usageFormatGetter, prog, args: Args, state) =
+    checkSpec spec
+    let maxwidth, reqSet = computeMaxWidthAndRequiredOptSet spec
+    let usage () = showUsage prog usageFormatGetter spec maxwidth reqSet ignore
+    if args.Length < 0 then usage (); raise <| RuntimeError "No argument given"
+    else parse [] spec args reqSet usage state
+
+  /// <summary>
+  /// Parses command-line arguments and returns a list of unmatched arguments.
+  /// </summary>
+  static member Parse(spec, prog, args, state) =
+    OptParse.Parse(spec, (fun () -> ""), prog, args, state)
+
+  /// <summary>
+  /// Prints out the usage.
+  /// </summary>
+  static member PrintUsage(spec, prog, usageFormatGetter, termFn) =
+    checkSpec spec
+    let maxwidth, reqSet = computeMaxWidthAndRequiredOptSet spec
+    showUsage prog usageFormatGetter spec maxwidth reqSet termFn
+
+  /// <summary>
+  /// Prints out the usage.
+  /// </summary>
+  static member PrintUsage(spec, prog, usageFormatGetter) =
+    OptParse.PrintUsage(spec, prog, usageFormatGetter, (fun () -> exit 1))
+
+  /// <summary>
+  /// Prints out the usage.
+  /// </summary>
+  static member PrintUsage(spec, prog) =
+    OptParse.PrintUsage(spec, prog, (fun () -> ""), (fun () -> exit 1))
