@@ -6,13 +6,14 @@ APIs that are succinct and clean. It is completely written in a single F# file
 (fs). It is very intuitive to use, and also provides lots of convenient
 command-line parsing features.
 
-B2R2.FsOptParse exposes just two functions including `optParse` and `usageExit`.
-The `optParse` function takes in a specification of command line options, a
-program name, and a list of arguments from a user as input. It then parses the
-input arguments and calls corresponding callback functions registered through
-the specification as per interpreting each encountered option. Finally, it
-returns a list of unmatched arguments. The `usageExit` function prints out a
-well-formed usage based on a given specification, and terminates the program.
+B2R2.FsOptParse exposes just two functions: `OptParse.Parse` and
+`OptParse.PrintUsage`.  The `OptParse.Parse` function takes in a specification
+of command line options, a program name, and a list of arguments from a user as
+input. It then parses the input arguments and calls corresponding callback
+functions registered through the specification as per interpreting each
+encountered option. Finally, it returns a list of unmatched arguments. The
+`OptParse.PrintUsage` function prints out a well-formed usage based on a given
+specification, and terminates the program.
 
 Build
 -----
