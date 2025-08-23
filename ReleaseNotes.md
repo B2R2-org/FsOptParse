@@ -1,3 +1,6 @@
+### New in 0.6.1 (Released 08/23/2025)
+* Introduce IUsageFormatter
+
 ### New in 0.6.0 (Released 08/20/2025)
 * Clean up the codebase
 * Use .NET-style APIs
