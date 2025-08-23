@@ -39,6 +39,15 @@ exception RuntimeError of string
 /// Represents command-line arguments.
 type private Args = string[]
 
+/// Represents an interface for usage printing.
+type IUsageFormatter =
+  /// Usage format string including placeholders, such as "%p" for program name
+  /// and "%o" for options.
+  abstract UsageForm: string
+
+  /// Callback function to be called before printing the usage.
+  abstract UsagePreCallback: unit -> unit
+
 /// Represents a command-line option.
 type CmdOpt<'Ctx>(descr,
                   ?callback,
@@ -155,11 +164,12 @@ module private CmdOpt =
     sb.Append("[opts...]").ToString().Trim()
 
   /// Print a single-line (simple) usage.
-  let printSimpleUsage prog usageFormatGetter reqSet =
-    let usgForm = usageFormatGetter ()
+  let printSimpleUsage prog (usageFormatter: IUsageFormatter) reqSet =
+    let usgForm = usageFormatter.UsageForm
     let usgForm = if String.length usgForm = 0 then "Usage: %p %o" else usgForm
     let usgForm = usgForm.Replace("%p", prog)
     let usgForm = usgForm.Replace("%o", getOptSummary reqSet)
+    usageFormatter.UsagePreCallback()
     Console.Write usgForm
     Console.WriteLine Environment.NewLine
 
@@ -205,8 +215,8 @@ module private CmdOpt =
     termFn ()
 
   /// Show usage and exit.
-  let showUsage prog usageFormatGetter spec maxWidth reqSet termFn =
-    printSimpleUsage prog usageFormatGetter reqSet
+  let showUsage prog usageFormatter spec maxWidth reqSet termFn =
+    printSimpleUsage prog usageFormatter reqSet
     printFullUsage spec maxWidth termFn
 
   let updateOptSet (opt: string) (optSet: HashSet<string>) =
@@ -304,10 +314,10 @@ type OptParse =
   /// <summary>
   /// Parses command-line arguments and returns a list of unmatched arguments.
   /// </summary>
-  static member Parse(spec, usageFormatGetter, prog, args: Args, state) =
+  static member Parse(spec, usageFormatter, prog, args: Args, state) =
     checkSpec spec
     let maxwidth, reqSet = computeMaxWidthAndRequiredOptSet spec
-    let usage () = showUsage prog usageFormatGetter spec maxwidth reqSet ignore
+    let usage () = showUsage prog usageFormatter spec maxwidth reqSet ignore
     if args.Length < 0 then usage (); raise <| RuntimeError "No argument given"
     else parse [] spec args reqSet usage state
 
@@ -315,24 +325,32 @@ type OptParse =
   /// Parses command-line arguments and returns a list of unmatched arguments.
   /// </summary>
   static member Parse(spec, prog, args, state) =
-    OptParse.Parse(spec, (fun () -> ""), prog, args, state)
+    let usageFormatter =
+      { new IUsageFormatter with
+          member _.UsageForm = ""
+          member _.UsagePreCallback () = () }
+    OptParse.Parse(spec, usageFormatter, prog, args, state)
 
   /// <summary>
   /// Prints out the usage.
   /// </summary>
-  static member PrintUsage(spec, prog, usageFormatGetter, termFn) =
+  static member PrintUsage(spec, prog, usageFormatter, termFn) =
     checkSpec spec
     let maxwidth, reqSet = computeMaxWidthAndRequiredOptSet spec
-    showUsage prog usageFormatGetter spec maxwidth reqSet termFn
+    showUsage prog usageFormatter spec maxwidth reqSet termFn
 
   /// <summary>
   /// Prints out the usage.
   /// </summary>
-  static member PrintUsage(spec, prog, usageFormatGetter) =
-    OptParse.PrintUsage(spec, prog, usageFormatGetter, (fun () -> exit 1))
+  static member PrintUsage(spec, prog, usageFormatter) =
+    OptParse.PrintUsage(spec, prog, usageFormatter, (fun () -> exit 1))
 
   /// <summary>
   /// Prints out the usage.
   /// </summary>
   static member PrintUsage(spec, prog) =
-    OptParse.PrintUsage(spec, prog, (fun () -> ""), (fun () -> exit 1))
+    let usageFormatter =
+      { new IUsageFormatter with
+          member _.UsageForm = ""
+          member _.UsagePreCallback () = () }
+    OptParse.PrintUsage(spec, prog, usageFormatter, (fun () -> exit 1))
