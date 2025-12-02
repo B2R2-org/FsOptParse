@@ -1,3 +1,6 @@
+### New in 0.6.2 (Released 12/02/2025)
+* Support .NET 10.0 and drop .NET 9.0
+
 ### New in 0.6.1 (Released 08/23/2025)
 * Introduce IUsageFormatter
 
