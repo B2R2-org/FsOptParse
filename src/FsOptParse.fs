@@ -141,7 +141,7 @@ module private CmdOpt =
   let [<Literal>] ExtraArgPattern = @"<([a-zA-Z0-9]+)>"
 
   let extractExtraArgStringFromDesc extraCnt descr =
-    let ms = Regex.Matches(descr, ExtraArgPattern)
+    let ms = Regex.Matches(descr.ToString(), ExtraArgPattern)
     if ms.Count > 0 && ms.Count <= extraCnt then
       let sb = Text.StringBuilder()
       for m in ms do sb.Append(" <" + m.Groups[1].Value + ">") |> ignore
@@ -155,7 +155,7 @@ module private CmdOpt =
 
   let getOptSummary reqSet =
     let sb = Text.StringBuilder()
-    for (reqopt: CmdOpt<_, _>) in reqSet do
+    for reqopt: CmdOpt<_, _> in reqSet do
       let short, long = reqopt.Short, reqopt.Long
       if short.Length = 0 then
         sb.Append $"{long}{getExtraArgString reqopt.Extra reqopt.Descr} "
@@ -179,11 +179,11 @@ module private CmdOpt =
     let long = opt.Long
     let short = opt.Short
     if long.Length > 0 && short.Length > 0 then
-      $"{short}, {long}{getExtraArgString opt.Extra opt.Descr}"
+      $"{short}, {long}{getExtraArgString opt.Extra (opt.Descr.ToString())}"
     elif long.Length > 0 then
-      long + getExtraArgString opt.Extra opt.Descr
+      long + getExtraArgString opt.Extra (opt.Descr.ToString())
     else
-      short + getExtraArgString opt.Extra opt.Descr
+      short + getExtraArgString opt.Extra (opt.Descr.ToString())
 
   let [<Literal>] Margin = 5
 
