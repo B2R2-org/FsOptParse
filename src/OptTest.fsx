@@ -30,15 +30,15 @@ open B2R2.FsOptParse
 
 /// Option state.
 type OptState =
-  { optX : int
-    optY : bool
-    optZ : string }
+  { OptX: int
+    OptY: bool
+    OptZ: string }
 
 /// Default option state.
 let defaultOpts =
-  { optX = 0
-    optY = false
-    optZ = "" }
+  { OptX = 0
+    OptY = false
+    OptZ = "" }
 
 /// An example command line specification, which is a list of CmdOpts. Each
 /// CmdOpt describes a command line option (switch) that is specified with
@@ -51,16 +51,16 @@ let spec =
            (* how many extra argument must be provided by a user? *)
            extra = 1,
            (* callback sets up the option and returns it *)
-           callback = (fun opts arg -> { opts with optX = (int) arg[0] }),
+           callback = (fun opts arg -> { opts with OptX = (int) arg[0] }),
            (* use a short option style -x *)
            short = "-x")
 
     (* This option can be specified with -y. There is no extra argument. This
-       option just sets a flag, optY. *)
+       option just sets a flag, OptY. *)
     CmdOpt((* description of the option *)
            descr = "this is a testing param Y",
            (* set the option to be true *)
-           callback = (fun opts _ -> { opts with optY = true }),
+           callback = (fun opts _ -> { opts with OptY = true }),
            (* use a short option style (-y) *)
            short = "-y",
            (* also use a long option style (--yoohoo) *)
@@ -73,7 +73,6 @@ let spec =
 
     CmdOpt((* description of the option *)
            descr = "[Required Options]",
-           descrColor = System.ConsoleColor.DarkCyan,
            dummy = true)
 
     (* The third option is a required option. In other words, option parsing
@@ -82,8 +81,8 @@ let spec =
        variable z. *)
     CmdOpt((* description of the option *)
            descr = "required parameter <STRING> with an integer option",
-           (* callback to set the optZ value *)
-           callback = (fun opts arg -> { opts with optZ = arg[0] }),
+           (* callback to set the OptZ value *)
+           callback = (fun opts arg -> { opts with OptZ = arg[0] }),
            (* specifying this is a required option *)
            required=true,
            (* one additional argument to specify an integer value *)
@@ -96,7 +95,7 @@ let _ =
   let args = System.Environment.GetCommandLineArgs ()
   try
     let left, opts = OptParse.Parse(spec, prog, args, defaultOpts)
-    printfn $"Rest args: {left}, x: {opts.optX}, y: {opts.optY}, z: {opts.optZ}"
+    printfn $"Rest args: {left}, x: {opts.OptX}, y: {opts.OptY}, z: {opts.OptZ}"
     0
   with
     | SpecError msg ->

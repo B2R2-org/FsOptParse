@@ -49,15 +49,15 @@ type IUsageFormatter =
   abstract UsagePreCallback: unit -> unit
 
 /// Represents a command-line option.
-type CmdOpt<'Ctx>(descr,
-                  ?callback,
-                  ?required,
-                  ?extra,
-                  ?help,
-                  ?short,
-                  ?long,
-                  ?dummy,
-                  ?descrColor) =
+type CmdOpt<'Ctx, 'Desc>(descr: 'Desc,
+                         ?callback,
+                         ?required,
+                         ?extra,
+                         ?help,
+                         ?short,
+                         ?long,
+                         ?dummy,
+                         ?descrPrinter) =
 
   let cbDefault ctx _args = ctx
 
@@ -83,10 +83,7 @@ type CmdOpt<'Ctx>(descr,
       else raise <| SpecError $"Invalid long option {opt} is given"
 
   /// Description of the option.
-  member _.Descr with get(): string = descr
-
-  /// Color of the description when printing the usage.
-  member _.DescrColor with get(): ConsoleColor option = descrColor
+  member _.Descr with get(): 'Desc = descr
 
   /// Callback function to be called when the option is matched.
   member _.Callback with get(): 'Ctx -> Args -> 'Ctx =
@@ -111,23 +108,28 @@ type CmdOpt<'Ctx>(descr,
   /// printing.
   member _.Dummy with get(): bool = defaultArg dummy false
 
-  interface IComparable<CmdOpt<'Ctx>> with
+  /// Prints out the description of the option using the given printer function.
+  member _.PrintDesc() =
+    defaultArg descrPrinter (fun d -> Console.WriteLine(d.ToString()))
+    <| descr
+
+  interface IComparable<CmdOpt<'Ctx, 'Desc>> with
     member this.CompareTo obj =
       compare (this.Short, this.Long) (obj.Short, obj.Long)
 
   interface IComparable with
     member this.CompareTo obj =
       match obj with
-      | :? CmdOpt<'Ctx> as obj -> (this :> IComparable<_>).CompareTo obj
+      | :? CmdOpt<'Ctx, 'Desc> as obj -> (this :> IComparable<_>).CompareTo obj
       | _ -> raise <| SpecError "Not an option"
 
-  interface IEquatable<CmdOpt<'Ctx>> with
+  interface IEquatable<CmdOpt<'Ctx, 'Desc>> with
     member this.Equals obj =
       this.Short = obj.Short && this.Long = obj.Long
 
   override this.Equals obj =
     match obj with
-    | :? CmdOpt<'Ctx> as obj -> (this :> IEquatable<_>).Equals obj
+    | :? CmdOpt<'Ctx, 'Desc> as obj -> (this :> IEquatable<_>).Equals obj
     | _ -> raise <| SpecError "Not an option"
 
   override this.GetHashCode() =
@@ -153,7 +155,7 @@ module private CmdOpt =
 
   let getOptSummary reqSet =
     let sb = Text.StringBuilder()
-    for (reqopt: CmdOpt<_>) in reqSet do
+    for (reqopt: CmdOpt<_, _>) in reqSet do
       let short, long = reqopt.Short, reqopt.Long
       if short.Length = 0 then
         sb.Append $"{long}{getExtraArgString reqopt.Extra reqopt.Descr} "
@@ -173,23 +175,15 @@ module private CmdOpt =
     Console.Write usgForm
     Console.WriteLine Environment.NewLine
 
-  let setColor = function
-    | None -> ()
-    | Some color -> Console.ForegroundColor <- color
-
-  let clearColor = function
-    | None -> ()
-    | Some _ -> Console.ResetColor()
-
-  let getOptUsageString (opt: CmdOpt<_>) =
+  let getOptUsageString (opt: CmdOpt<_, _>) =
     let long = opt.Long
     let short = opt.Short
     if long.Length > 0 && short.Length > 0 then
       $"{short}, {long}{getExtraArgString opt.Extra opt.Descr}"
     elif long.Length > 0 then
-      long + (getExtraArgString opt.Extra opt.Descr)
+      long + getExtraArgString opt.Extra opt.Descr
     else
-      short + (getExtraArgString opt.Extra opt.Descr)
+      short + getExtraArgString opt.Extra opt.Descr
 
   let [<Literal>] Margin = 5
 
@@ -202,15 +196,13 @@ module private CmdOpt =
     String.concat "" (rep [] " " space)
 
   let printFullUsage spec maxWidth termFn =
-    for (opt: CmdOpt<_>) in spec do
-      setColor opt.DescrColor
+    for opt: CmdOpt<_, _> in spec do
       if opt.Dummy then
-        Console.WriteLine opt.Descr
+        opt.PrintDesc()
       else
         let optstr = getOptUsageString opt
-        $"{optstr}{fillSpace maxWidth optstr}: {opt.Descr}"
-        |> Console.WriteLine
-      clearColor opt.DescrColor
+        Console.Write $"{optstr}{fillSpace maxWidth optstr}: "
+        opt.PrintDesc()
     Console.WriteLine()
     termFn ()
 
@@ -234,7 +226,7 @@ module private CmdOpt =
 
   let checkSpec spec =
     let optSet = HashSet<string>()
-    for opt: CmdOpt<_> in spec do
+    for opt: CmdOpt<_, _> in spec do
       if opt.Dummy then
         ()
       else
@@ -265,14 +257,14 @@ module private CmdOpt =
   and specLoop args reqSet left usage state = function
     | [] ->
       args[1..], (args[0] :: left), reqSet, state
-    | (opt: CmdOpt<_>) :: rest ->
+    | (opt: CmdOpt<_, _>) :: rest ->
       let m, args, reqSet, state =
         if opt.Dummy then false, args, reqSet, state
         else argMatch opt args reqSet usage state
       if m then args, left, reqSet, state
       else specLoop args reqSet left usage state rest
 
-  and argMatch (opt: CmdOpt<_>) args reqSet usage state =
+  and argMatch (opt: CmdOpt<_, _>) args reqSet usage state =
     let argNoMatch = (false, args, reqSet, state)
     let short, long = opt.Short, opt.Long
     let extra = opt.Extra
@@ -328,7 +320,7 @@ type OptParse =
     let usageFormatter =
       { new IUsageFormatter with
           member _.UsageForm = ""
-          member _.UsagePreCallback () = () }
+          member _.UsagePreCallback() = () }
     OptParse.Parse(spec, usageFormatter, prog, args, state)
 
   /// <summary>
@@ -352,5 +344,5 @@ type OptParse =
     let usageFormatter =
       { new IUsageFormatter with
           member _.UsageForm = ""
-          member _.UsagePreCallback () = () }
+          member _.UsagePreCallback() = () }
     OptParse.PrintUsage(spec, prog, usageFormatter, (fun () -> exit 1))
